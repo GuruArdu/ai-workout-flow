@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,8 @@ const StartWorkout = () => {
 
       console.log("Sending workout request:", data);
 
-      const response = await fetch("/api/generateWorkoutPlan", {
+      // Fix: Use the correct endpoint path that matches the Supabase Edge Function
+      const response = await fetch("/functions/v1/generateWorkoutPlan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

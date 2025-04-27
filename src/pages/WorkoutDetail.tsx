@@ -23,7 +23,8 @@ const WorkoutDetail = () => {
     queryFn: async () => {
       try {
         console.log("Fetching workout session:", id);
-        const response = await fetch(`/api/workout_sessions/${id}`);
+        // Update to use the correct endpoint matching the Supabase API path
+        const response = await fetch(`/functions/v1/workout_sessions/${id}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch workout session: ${response.status}`);

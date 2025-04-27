@@ -60,7 +60,7 @@ export const POST = async ({ json, auth, error }) => {
 
     // Parse the function call result
     let parsedPlan;
-    if (completion.choices[0].message.function_call?.arguments) {
+    if (completion.choices[0]?.message?.function_call?.arguments) {
       parsedPlan = JSON.parse(completion.choices[0].message.function_call.arguments);
       console.log("Successfully parsed workout plan from function call");
     } else {

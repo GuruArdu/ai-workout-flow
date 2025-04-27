@@ -15,7 +15,7 @@ export interface ExerciseSet {
 
 export interface Exercise {
   name: string;
-  sets: number;  // Changed to number for better compatibility with function call response
+  sets: number;
   reps: string;
   weight?: string;
 }
