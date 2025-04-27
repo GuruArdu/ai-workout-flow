@@ -2,12 +2,13 @@
 import { OpenAI } from "lovable/ai";
 import { sql } from "lovable/db";
 
+// Define the Edge Function handler
 export const POST = async ({ json, auth, error }) => {
   try {
     const input = await json();
     const userId = auth.userId;
 
-    console.log("Received workout request:", input);
+    console.log("Received workout request in Edge Function:", input);
 
     // Create OpenAI instance - Lovable automatically injects the API key
     const openai = new OpenAI();

@@ -40,7 +40,7 @@ const StartWorkout = () => {
 
       console.log("Sending workout request:", data);
 
-      // Fix: Use the correct endpoint path that matches the Supabase Edge Function
+      // Use the correct Edge Function path
       const response = await fetch("/functions/v1/generateWorkoutPlan", {
         method: "POST",
         headers: {
@@ -50,7 +50,8 @@ const StartWorkout = () => {
       });
 
       if (!response.ok) {
-        console.error("Error response:", response.status, await response.text());
+        const errorText = await response.text();
+        console.error("Error response:", response.status, errorText);
         throw new Error(`Failed to generate workout plan: ${response.status}`);
       }
 

@@ -23,7 +23,7 @@ const WorkoutDetail = () => {
     queryFn: async () => {
       try {
         console.log("Fetching workout session:", id);
-        // Update to use the correct endpoint matching the Supabase API path
+        // Use the correct path for the Edge Function
         const response = await fetch(`/functions/v1/workout_sessions/${id}`);
         
         if (!response.ok) {
