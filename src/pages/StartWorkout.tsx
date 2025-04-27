@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 type WorkoutStep = "muscles" | "style" | "duration" | "goal";
 
@@ -24,16 +23,38 @@ const StartWorkout = () => {
     duration: 30,
     goal: "strength",
   });
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const updateData = <K extends keyof WorkoutData>(key: K, value: WorkoutData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleGenerateWorkout = () => {
-    // Here you would normally call your AI function to generate a workout
-    // and then navigate to the workout page with the generated data
-    const workoutId = "generated-" + Date.now();
-    navigate(`/workout/${workoutId}`);
+  const handleGenerateWorkout = async () => {
+    try {
+      setIsGenerating(true);
+      const response = await fetch("/api/generateWorkoutPlan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate workout plan");
+      }
+
+      const { sessionId, plan } = await response.json();
+      navigate(`/workout/${sessionId}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate workout plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const muscleGroups = [
@@ -231,10 +252,17 @@ const StartWorkout = () => {
             <Button 
               type="button" 
               onClick={handleNext}
-              disabled={step === "muscles" && data.muscles.length === 0}
+              disabled={
+                (step === "muscles" && data.muscles.length === 0) ||
+                isGenerating
+              }
               className="flex items-center gap-2"
             >
-              {step === "goal" ? "Generate Plan" : "Continue"}
+              {isGenerating ? (
+                "Generating..."
+              ) : (
+                step === "goal" ? "Generate Plan" : "Continue"
+              )}
               {step !== "goal" && <ArrowRight className="h-4 w-4" />}
             </Button>
           </CardFooter>

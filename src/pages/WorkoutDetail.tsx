@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,85 +6,31 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-// Sample workout data - in a real app, this would come from the API
-const sampleWorkout = {
-  id: "generated-123456",
-  title: "Full Body Strength Workout",
-  exercises: [
-    {
-      name: "Barbell Squat",
-      sets: 4,
-      reps: 8,
-      weight_suggestion: "70% of 1RM",
-      video_url: "https://example.com/squat",
-    },
-    {
-      name: "Bench Press",
-      sets: 3,
-      reps: 10,
-      weight_suggestion: "65% of 1RM",
-      video_url: "https://example.com/bench",
-    },
-    {
-      name: "Bent Over Row",
-      sets: 3,
-      reps: 12,
-      weight_suggestion: "60% of 1RM",
-      video_url: "https://example.com/row",
-    },
-    {
-      name: "Overhead Press",
-      sets: 3,
-      reps: 10,
-      weight_suggestion: "60% of 1RM",
-      video_url: "https://example.com/overhead",
-    },
-    {
-      name: "Deadlift",
-      sets: 3,
-      reps: 8,
-      weight_suggestion: "75% of 1RM",
-      video_url: "https://example.com/deadlift",
-    }
-  ]
-};
-
-type ExerciseLog = {
-  setIndex: number;
-  weight: string;
-  reps: string;
-  rpe: string;
-}
-
-type ExerciseState = {
-  [exerciseIndex: number]: {
-    expanded: boolean;
-    sets: ExerciseLog[];
-  }
-}
+import { useQuery } from "@tanstack/react-query";
 
 const WorkoutDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [workout] = useState(sampleWorkout); // In a real app, fetch based on ID
-  
-  const [exerciseState, setExerciseState] = useState<ExerciseState>(() => {
-    // Initialize state for all exercises
-    const initialState: ExerciseState = {};
-    workout.exercises.forEach((exercise, index) => {
-      initialState[index] = {
-        expanded: false,
-        sets: Array.from({ length: exercise.sets }, (_, i) => ({
-          setIndex: i + 1,
-          weight: "",
-          reps: "",
-          rpe: "7",
-        })),
-      };
-    });
-    return initialState;
+  const [exerciseState, setExerciseState] = useState({});
+
+  const { data: session, isLoading, error } = useQuery({
+    queryKey: ["workout_session", id],
+    queryFn: async () => {
+      const response = await fetch(`/api/workout_sessions/${id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch workout session");
+      }
+      return response.json();
+    },
   });
+
+  if (isLoading) {
+    return <div className="p-4">Loading workout plan...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4">Error loading workout plan. Please try again.</div>;
+  }
 
   const toggleExercise = (exerciseIndex: number) => {
     setExerciseState(prev => ({
@@ -149,90 +94,25 @@ const WorkoutDetail = () => {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">{workout.title}</h1>
+        <h1 className="text-2xl font-bold">{session.goal} Workout</h1>
       </div>
       
       <div className="space-y-4 mb-8">
-        {workout.exercises.map((exercise, exerciseIndex) => (
-          <Card key={exercise.name}>
-            <CardHeader 
-              className="cursor-pointer flex flex-row items-center justify-between py-3 px-4"
-              onClick={() => toggleExercise(exerciseIndex)}
-            >
-              <CardTitle className="text-lg font-medium flex items-center">
-                {exercise.name}
-              </CardTitle>
-              {exerciseState[exerciseIndex]?.expanded ? (
-                <ChevronUp className="h-5 w-5" />
-              ) : (
-                <ChevronDown className="h-5 w-5" />
-              )}
-            </CardHeader>
-            
-            {exerciseState[exerciseIndex]?.expanded && (
-              <CardContent>
-                <div className="text-sm text-gray-600 mb-4">
-                  <p>Target: {exercise.reps} reps per set</p>
-                  <p>Suggested weight: {exercise.weight_suggestion}</p>
-                </div>
-                
-                <div className="space-y-4">
-                  {exerciseState[exerciseIndex]?.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="grid grid-cols-4 gap-2 items-end">
-                      <div>
-                        <Label className="text-xs">Set {set.setIndex}</Label>
-                        <div className="h-10 flex items-center">
-                          <span className="font-medium">{set.setIndex}</span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor={`weight-${exerciseIndex}-${setIndex}`} className="text-xs">Weight</Label>
-                        <Input
-                          id={`weight-${exerciseIndex}-${setIndex}`}
-                          value={set.weight}
-                          onChange={(e) => updateSet(exerciseIndex, setIndex, "weight", e.target.value)}
-                          type="number"
-                          placeholder="kg"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor={`reps-${exerciseIndex}-${setIndex}`} className="text-xs">Reps</Label>
-                        <Input
-                          id={`reps-${exerciseIndex}-${setIndex}`}
-                          value={set.reps}
-                          onChange={(e) => updateSet(exerciseIndex, setIndex, "reps", e.target.value)}
-                          type="number"
-                          placeholder="#"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor={`rpe-${exerciseIndex}-${setIndex}`} className="text-xs">RPE (1-10)</Label>
-                        <Input
-                          id={`rpe-${exerciseIndex}-${setIndex}`}
-                          value={set.rpe}
-                          onChange={(e) => updateSet(exerciseIndex, setIndex, "rpe", e.target.value)}
-                          type="number"
-                          min="1"
-                          max="10"
-                          placeholder="7"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            )}
+        {session.ai_plan && typeof session.ai_plan === 'string' ? (
+          <Card>
+            <CardContent className="p-4">
+              <pre className="whitespace-pre-wrap">{session.ai_plan}</pre>
+            </CardContent>
           </Card>
-        ))}
+        ) : (
+          <div>Invalid workout plan format</div>
+        )}
       </div>
       
       <div className="flex justify-end">
         <Button 
           className="flex items-center gap-2"
-          onClick={handleSaveWorkout}
+          onClick={() => navigate("/dashboard")}
         >
           <Check className="h-4 w-4" />
           Complete Workout
