@@ -8,7 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Exercise, ExerciseLog, WorkoutSession } from "@/types/workout";
+import { Exercise, ExerciseLog, WorkoutSession, ExerciseSet } from "@/types/workout";
 
 const WorkoutDetail = () => {
   const navigate = useNavigate();
@@ -134,7 +134,8 @@ const WorkoutDetail = () => {
                 {exerciseState[index]?.expanded && (
                   <CardContent className="p-4 pt-0">
                     <div className="space-y-4">
-                      {Array.from({ length: exercise.sets || 3 }).map((_, setIndex) => (
+                      {/* Fix: Properly handle the type for generating sets */}
+                      {Array.from({ length: exercise.sets.length || 3 }).map((_, setIndex) => (
                         <div key={setIndex} className="flex items-center gap-2">
                           <div className="font-medium w-10">#{setIndex + 1}</div>
                           
