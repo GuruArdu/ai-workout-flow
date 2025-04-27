@@ -17,29 +17,18 @@ export const POST = async ({ json, auth, error }) => {
       LIMIT 30
     `;
 
-    const openai = new OpenAI(process.env.OPENAI_API_KEY);
+    // Create OpenAI instance without explicitly passing the key
+    // Lovable will automatically inject it from your secrets
+    const openai = new OpenAI();
 
+    // Use function calling for guaranteed JSON format
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.7,
       messages: [
         { 
           role: "system", 
-          content: `You are a certified strength and conditioning coach generating a personalized workout plan.
-          
-          Return the response in this JSON format:
-          {
-            "exercises": [
-              {
-                "name": "Exercise Name",
-                "sets": [
-                  {"reps": "10-12", "weight": "user determined"},
-                  {"reps": "8-10", "weight": "user determined"}
-                ]
-              }
-            ]
-          }
-          
-          Do not include any markdown formatting or explanation outside the JSON structure.`
+          content: "You are a certified strength and conditioning coach generating a personalized workout plan based on the user's goals, style preferences, and target muscle groups."
         },
         { 
           role: "user", 
@@ -47,23 +36,72 @@ export const POST = async ({ json, auth, error }) => {
             - Muscles: ${input.muscles.join(", ")}
             - Style: ${input.style}
             - Goal: ${input.goal}
-            - Duration: ${input.duration} minutes` 
+            - Duration: ${input.duration} minutes`
         }
-      ]
+      ],
+      functions: [
+        {
+          name: "generate_workout_plan",
+          description: "Generate a structured workout plan based on user parameters",
+          parameters: {
+            type: "object",
+            properties: {
+              exercises: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    sets: { 
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          reps: { type: "string" },
+                          weight: { type: "string" }
+                        }
+                      }
+                    }
+                  },
+                  required: ["name", "sets"]
+                }
+              }
+            },
+            required: ["exercises"]
+          }
+        }
+      ],
+      function_call: { name: "generate_workout_plan" }
     });
 
-    // Get the generated plan
-    const planText = completion.choices[0].message.content;
-    
+    // Parse the function call result to get the structured workout plan
     let parsedPlan;
     try {
-      // Try to parse as JSON first
-      parsedPlan = JSON.parse(planText.trim());
-      console.log("Successfully parsed workout plan as JSON");
+      const functionCall = completion.choices[0].message.function_call;
+      if (functionCall && functionCall.arguments) {
+        parsedPlan = JSON.parse(functionCall.arguments);
+        console.log("Successfully parsed workout plan from function call");
+      } else {
+        // Fallback if function call isn't available
+        const content = completion.choices[0].message.content || "{}";
+        // Try to extract JSON from the content 
+        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/);
+        parsedPlan = jsonMatch ? JSON.parse(jsonMatch[1].trim()) : JSON.parse(content.trim());
+        console.log("Parsed workout plan from content");
+      }
     } catch (e) {
-      // If parsing fails, just use the raw text
-      console.log("Could not parse as JSON, using raw text", e);
-      parsedPlan = planText;
+      console.error("Error parsing plan:", e);
+      // If parsing fails, use a basic structure to avoid breaking the frontend
+      parsedPlan = {
+        exercises: [
+          {
+            name: "Default Exercise (parsing error)",
+            sets: [
+              { reps: "10", weight: "user determined" }
+            ]
+          }
+        ]
+      };
     }
 
     // Store workout session

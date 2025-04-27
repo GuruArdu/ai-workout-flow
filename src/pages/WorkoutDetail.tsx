@@ -95,6 +95,15 @@ const WorkoutDetail = () => {
     navigate("/dashboard");
   };
 
+  const getExerciseSetsCount = (exercise: Exercise): number => {
+    if (typeof exercise.sets === 'number') {
+      return exercise.sets;
+    } else if (Array.isArray(exercise.sets)) {
+      return exercise.sets.length;
+    }
+    return 3; // Default to 3 sets if undefined
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-3xl">
       <div className="flex items-center mb-6">
@@ -134,46 +143,58 @@ const WorkoutDetail = () => {
                 {exerciseState[index]?.expanded && (
                   <CardContent className="p-4 pt-0">
                     <div className="space-y-4">
-                      {/* Generate sets based on exercise.sets array length or default to 3 sets */}
-                      {Array.from({ length: Array.isArray(exercise.sets) ? exercise.sets.length : 3 }).map((_, setIndex) => (
-                        <div key={setIndex} className="flex items-center gap-2">
-                          <div className="font-medium w-10">#{setIndex + 1}</div>
-                          
-                          <div className="flex-1">
-                            <Label htmlFor={`weight-${index}-${setIndex}`} className="sr-only">Weight</Label>
-                            <Input
-                              id={`weight-${index}-${setIndex}`}
-                              placeholder="Weight"
-                              value={exerciseState[index]?.sets?.[setIndex]?.weight || ""}
-                              onChange={(e) => updateSet(index, setIndex, "weight", e.target.value)}
-                            />
+                      {Array.from({ length: getExerciseSetsCount(exercise) }).map((_, setIndex) => {
+                        // Get preset values from exercise.sets if available
+                        let presetReps = "";
+                        let presetWeight = "";
+                        
+                        if (Array.isArray(exercise.sets) && exercise.sets[setIndex]) {
+                          presetReps = exercise.sets[setIndex].reps || "";
+                          presetWeight = exercise.sets[setIndex].weight || "";
+                        } else if (exercise.reps) {
+                          presetReps = exercise.reps.toString();
+                        }
+                        
+                        return (
+                          <div key={setIndex} className="flex items-center gap-2">
+                            <div className="font-medium w-10">#{setIndex + 1}</div>
+                            
+                            <div className="flex-1">
+                              <Label htmlFor={`weight-${index}-${setIndex}`} className="sr-only">Weight</Label>
+                              <Input
+                                id={`weight-${index}-${setIndex}`}
+                                placeholder={presetWeight || "Weight"}
+                                value={exerciseState[index]?.sets?.[setIndex]?.weight || ""}
+                                onChange={(e) => updateSet(index, setIndex, "weight", e.target.value)}
+                              />
+                            </div>
+                            
+                            <div className="flex-1">
+                              <Label htmlFor={`reps-${index}-${setIndex}`} className="sr-only">Reps</Label>
+                              <Input
+                                id={`reps-${index}-${setIndex}`}
+                                placeholder={presetReps || "Reps"}
+                                value={exerciseState[index]?.sets?.[setIndex]?.reps || ""}
+                                onChange={(e) => updateSet(index, setIndex, "reps", e.target.value)}
+                              />
+                            </div>
+                            
+                            <Button
+                              variant={exerciseState[index]?.sets?.[setIndex]?.completed ? "default" : "outline"}
+                              size="sm"
+                              className="w-24"
+                              onClick={() => updateSet(
+                                index, 
+                                setIndex, 
+                                "completed", 
+                                (!exerciseState[index]?.sets?.[setIndex]?.completed).toString()
+                              )}
+                            >
+                              {exerciseState[index]?.sets?.[setIndex]?.completed ? "Done" : "Mark Done"}
+                            </Button>
                           </div>
-                          
-                          <div className="flex-1">
-                            <Label htmlFor={`reps-${index}-${setIndex}`} className="sr-only">Reps</Label>
-                            <Input
-                              id={`reps-${index}-${setIndex}`}
-                              placeholder="Reps"
-                              value={exerciseState[index]?.sets?.[setIndex]?.reps || ""}
-                              onChange={(e) => updateSet(index, setIndex, "reps", e.target.value)}
-                            />
-                          </div>
-                          
-                          <Button
-                            variant={exerciseState[index]?.sets?.[setIndex]?.completed ? "default" : "outline"}
-                            size="sm"
-                            className="w-24"
-                            onClick={() => updateSet(
-                              index, 
-                              setIndex, 
-                              "completed", 
-                              (!exerciseState[index]?.sets?.[setIndex]?.completed).toString()
-                            )}
-                          >
-                            {exerciseState[index]?.sets?.[setIndex]?.completed ? "Done" : "Mark Done"}
-                          </Button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 )}

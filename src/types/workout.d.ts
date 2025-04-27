@@ -16,6 +16,8 @@ export interface ExerciseSet {
 export interface Exercise {
   name: string;
   sets: ExerciseSet[] | number;
+  reps?: string | number;
+  weight?: string;
   // Allow sets to be either an array of exercise sets or a number (for compatibility)
 }
 
