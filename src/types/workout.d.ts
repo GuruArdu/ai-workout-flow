@@ -15,7 +15,8 @@ export interface ExerciseSet {
 
 export interface Exercise {
   name: string;
-  sets: ExerciseSet[];
+  sets: ExerciseSet[] | number;
+  // Allow sets to be either an array of exercise sets or a number (for compatibility)
 }
 
 export interface WorkoutSession {

@@ -134,8 +134,8 @@ const WorkoutDetail = () => {
                 {exerciseState[index]?.expanded && (
                   <CardContent className="p-4 pt-0">
                     <div className="space-y-4">
-                      {/* Fix: Properly handle the type for generating sets */}
-                      {Array.from({ length: exercise.sets.length || 3 }).map((_, setIndex) => (
+                      {/* Generate sets based on exercise.sets array length or default to 3 sets */}
+                      {Array.from({ length: Array.isArray(exercise.sets) ? exercise.sets.length : 3 }).map((_, setIndex) => (
                         <div key={setIndex} className="flex items-center gap-2">
                           <div className="font-medium w-10">#{setIndex + 1}</div>
                           

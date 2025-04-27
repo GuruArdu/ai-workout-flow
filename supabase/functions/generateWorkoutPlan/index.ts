@@ -24,7 +24,22 @@ export const POST = async ({ json, auth, error }) => {
       messages: [
         { 
           role: "system", 
-          content: "You are a certified strength and conditioning coach generating a personalized workout plan." 
+          content: `You are a certified strength and conditioning coach generating a personalized workout plan.
+          
+          Return the response in this JSON format:
+          {
+            "exercises": [
+              {
+                "name": "Exercise Name",
+                "sets": [
+                  {"reps": "10-12", "weight": "user determined"},
+                  {"reps": "8-10", "weight": "user determined"}
+                ]
+              }
+            ]
+          }
+          
+          Do not include any markdown formatting or explanation outside the JSON structure.`
         },
         { 
           role: "user", 
@@ -37,7 +52,19 @@ export const POST = async ({ json, auth, error }) => {
       ]
     });
 
-    const plan = completion.choices[0].message.content;
+    // Get the generated plan
+    const planText = completion.choices[0].message.content;
+    
+    let parsedPlan;
+    try {
+      // Try to parse as JSON first
+      parsedPlan = JSON.parse(planText.trim());
+      console.log("Successfully parsed workout plan as JSON");
+    } catch (e) {
+      // If parsing fails, just use the raw text
+      console.log("Could not parse as JSON, using raw text", e);
+      parsedPlan = planText;
+    }
 
     // Store workout session
     const [{ id: sessionId }] = await sql`
@@ -45,12 +72,13 @@ export const POST = async ({ json, auth, error }) => {
         (user_id, goal, style, duration_min, primary_muscles, ai_plan)
       VALUES 
         (${userId}, ${input.goal}, ${input.style}, ${input.duration}, 
-         ${JSON.stringify(input.muscles)}, ${plan})
+         ${JSON.stringify(input.muscles)}, ${JSON.stringify(parsedPlan)})
       RETURNING id
     `;
 
-    return new Response(JSON.stringify({ sessionId, plan }), { status: 200 });
+    return new Response(JSON.stringify({ sessionId, plan: parsedPlan }), { status: 200 });
   } catch (err) {
+    console.error("Error generating workout plan:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };
