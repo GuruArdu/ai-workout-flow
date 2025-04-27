@@ -15,10 +15,9 @@ export interface ExerciseSet {
 
 export interface Exercise {
   name: string;
-  sets: ExerciseSet[] | number;
-  reps?: string | number;
+  sets: number;  // Changed to number for better compatibility with function call response
+  reps: string;
   weight?: string;
-  // Allow sets to be either an array of exercise sets or a number (for compatibility)
 }
 
 export interface WorkoutSession {
@@ -29,5 +28,5 @@ export interface WorkoutSession {
   primary_muscles: string[];
   ai_plan: {
     exercises: Exercise[];
-  } | string;
+  };
 }

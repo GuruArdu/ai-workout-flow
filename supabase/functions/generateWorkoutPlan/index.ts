@@ -7,18 +7,9 @@ export const POST = async ({ json, auth, error }) => {
     const input = await json();
     const userId = auth.userId;
 
-    // Fetch recent exercise history for context
-    const history = await sql`
-      SELECT exercise_name, AVG(rpe) AS avg_rpe
-      FROM exercise_log
-      WHERE user_id = ${userId}
-      GROUP BY exercise_name
-      ORDER BY avg_rpe DESC
-      LIMIT 30
-    `;
+    console.log("Received workout request:", input);
 
-    // Create OpenAI instance without explicitly passing the key
-    // Lovable will automatically inject it from your secrets
+    // Create OpenAI instance - Lovable automatically injects the API key
     const openai = new OpenAI();
 
     // Use function calling for guaranteed JSON format
@@ -52,18 +43,11 @@ export const POST = async ({ json, auth, error }) => {
                   type: "object",
                   properties: {
                     name: { type: "string" },
-                    sets: { 
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          reps: { type: "string" },
-                          weight: { type: "string" }
-                        }
-                      }
-                    }
+                    sets: { type: "integer", minimum: 1 },
+                    reps: { type: "string" },
+                    weight: { type: "string" }
                   },
-                  required: ["name", "sets"]
+                  required: ["name", "sets", "reps"]
                 }
               }
             },
@@ -74,34 +58,13 @@ export const POST = async ({ json, auth, error }) => {
       function_call: { name: "generate_workout_plan" }
     });
 
-    // Parse the function call result to get the structured workout plan
+    // Parse the function call result
     let parsedPlan;
-    try {
-      const functionCall = completion.choices[0].message.function_call;
-      if (functionCall && functionCall.arguments) {
-        parsedPlan = JSON.parse(functionCall.arguments);
-        console.log("Successfully parsed workout plan from function call");
-      } else {
-        // Fallback if function call isn't available
-        const content = completion.choices[0].message.content || "{}";
-        // Try to extract JSON from the content 
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/);
-        parsedPlan = jsonMatch ? JSON.parse(jsonMatch[1].trim()) : JSON.parse(content.trim());
-        console.log("Parsed workout plan from content");
-      }
-    } catch (e) {
-      console.error("Error parsing plan:", e);
-      // If parsing fails, use a basic structure to avoid breaking the frontend
-      parsedPlan = {
-        exercises: [
-          {
-            name: "Default Exercise (parsing error)",
-            sets: [
-              { reps: "10", weight: "user determined" }
-            ]
-          }
-        ]
-      };
+    if (completion.choices[0].message.function_call?.arguments) {
+      parsedPlan = JSON.parse(completion.choices[0].message.function_call.arguments);
+      console.log("Successfully parsed workout plan from function call");
+    } else {
+      throw new Error("Failed to get workout plan from OpenAI");
     }
 
     // Store workout session
@@ -114,9 +77,19 @@ export const POST = async ({ json, auth, error }) => {
       RETURNING id
     `;
 
-    return new Response(JSON.stringify({ sessionId, plan: parsedPlan }), { status: 200 });
+    return new Response(JSON.stringify({ sessionId, plan: parsedPlan }), { 
+      status: 200,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
   } catch (err) {
     console.error("Error generating workout plan:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), { 
+      status: 500,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
   }
 };

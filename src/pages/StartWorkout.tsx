@@ -32,6 +32,13 @@ const StartWorkout = () => {
   const handleGenerateWorkout = async () => {
     try {
       setIsGenerating(true);
+      toast({
+        title: "Generating workout plan",
+        description: "Please wait while we create your personalized workout plan.",
+      });
+
+      console.log("Sending workout request:", data);
+
       const response = await fetch("/api/generateWorkoutPlan", {
         method: "POST",
         headers: {
@@ -41,15 +48,32 @@ const StartWorkout = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate workout plan");
+        console.error("Error response:", response.status, await response.text());
+        throw new Error(`Failed to generate workout plan: ${response.status}`);
       }
 
-      const { sessionId, plan } = await response.json();
-      navigate(`/workout/${sessionId}`);
+      const result = await response.json();
+      console.log("Workout generated:", result);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (!result.sessionId) {
+        throw new Error("No session ID returned from API");
+      }
+
+      toast({
+        title: "Workout generated!",
+        description: "Your personalized workout plan is ready.",
+      });
+
+      navigate(`/workout/${result.sessionId}`);
     } catch (error) {
+      console.error("Error generating workout:", error);
       toast({
         title: "Error",
-        description: "Failed to generate workout plan. Please try again.",
+        description: `Failed to generate workout plan: ${error.message}`,
         variant: "destructive",
       });
     } finally {
