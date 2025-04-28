@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { GenerateWorkoutPlanResponse } from "@/types/edge-functions";
 
 type WorkoutStep = "muscles" | "style" | "duration" | "goal";
 
@@ -60,7 +61,7 @@ const StartWorkout = () => {
 
       console.log("Sending workout request with profile:", { ...workoutData, profile });
 
-      const { data: payload, error } = await supabase.functions.invoke<"generateWorkoutPlan">(
+      const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
         'generateWorkoutPlan',
         {
           method: "POST",
