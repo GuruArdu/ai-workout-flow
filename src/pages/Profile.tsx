@@ -68,7 +68,7 @@ const Profile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user) {
+      if (!user || user.id === "preview-user") {
         setLoading(false);
         return;
       }
@@ -123,7 +123,7 @@ const Profile = () => {
   }, [user, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!user) {
+    if (!user || user.id === "preview-user") {
       toast({
         title: "Error",
         description: "You must be logged in to update your profile",
