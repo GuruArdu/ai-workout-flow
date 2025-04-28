@@ -37,6 +37,10 @@ const profileFormSchema = z.object({
     message: "Age must be between 13 and 120",
   }).optional(),
   fitness_level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  activity_level: z.enum(["sedentary", "light", "moderate", "very_active", "extra_active"]).optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  height_unit: z.enum(["cm", "in"]).default("cm"),
+  weight_unit: z.enum(["kg", "lbs"]).default("kg"),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -44,6 +48,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -53,6 +58,10 @@ const Profile = () => {
       weight: "",
       age: "",
       fitness_level: undefined,
+      activity_level: undefined,
+      gender: undefined,
+      height_unit: "cm",
+      weight_unit: "kg",
     },
   });
 
@@ -76,6 +85,10 @@ const Profile = () => {
             weight: profile.weight?.toString() || "",
             age: profile.age?.toString() || "",
             fitness_level: profile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
+            activity_level: profile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
+            gender: profile.gender as "male" | "female" | "other" | undefined,
+            height_unit: profile.height_unit || "cm",
+            weight_unit: profile.weight_unit || "kg",
           });
         }
       } catch (error) {
@@ -95,6 +108,7 @@ const Profile = () => {
 
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
+    setIsSaving(true);
 
     try {
       const { error } = await supabase
@@ -106,6 +120,10 @@ const Profile = () => {
           weight: values.weight ? Number(values.weight) : null,
           age: values.age ? Number(values.age) : null,
           fitness_level: values.fitness_level || null,
+          activity_level: values.activity_level || null,
+          gender: values.gender || null,
+          height_unit: values.height_unit,
+          weight_unit: values.weight_unit,
           updated_at: new Date().toISOString(),
         });
 
@@ -122,6 +140,8 @@ const Profile = () => {
         description: "Failed to update profile",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -154,31 +174,102 @@ const Profile = () => {
 
               <FormField
                 control={form.control}
-                name="height"
+                name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Height (cm)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Enter height" {...field} />
-                    </FormControl>
+                    <FormLabel>Gender</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight (kg)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Enter weight" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="height"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Height</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Enter height" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="height_unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cm">cm</SelectItem>
+                          <SelectItem value="in">inches</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Enter weight" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="weight_unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="kg">kg</SelectItem>
+                          <SelectItem value="lbs">lbs</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -189,6 +280,31 @@ const Profile = () => {
                     <FormControl>
                       <Input type="number" placeholder="Enter age" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="activity_level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activity Level</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your activity level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="sedentary">Sedentary</SelectItem>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="moderate">Moderate</SelectItem>
+                        <SelectItem value="very_active">Very Active</SelectItem>
+                        <SelectItem value="extra_active">Extra Active</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -217,8 +333,8 @@ const Profile = () => {
                 )}
               />
 
-              <Button type="submit" className="w-full">
-                Save Changes
+              <Button type="submit" className="w-full" disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </form>
           </Form>

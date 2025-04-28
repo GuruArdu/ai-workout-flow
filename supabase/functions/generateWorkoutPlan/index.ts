@@ -71,18 +71,39 @@ serve(async (req) => {
       return jsonError("Invalid token or user not found", 401);
     }
     
+    // Get user profile data
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+    }
+
+    // Normalize measurements to metric system for consistency
+    const normalizedProfile = profile ? {
+      age: profile.age,
+      gender: profile.gender,
+      height: profile.height_unit === 'in' ? profile.height * 2.54 : profile.height,
+      weight: profile.weight_unit === 'lbs' ? profile.weight * 0.453592 : profile.weight,
+      activity_level: profile.activity_level,
+      fitness_level: profile.fitness_level
+    } : null;
+    
     const userId = user.id;
     console.log("Received workout request in Edge Function:", input);
     console.log("Authenticated user:", userId);
+    console.log("User profile:", normalizedProfile);
 
     // Fix #7: Ensure style and goal are lowercase for consistency
     const normalizedInput = {
       ...input,
       style: input.style.toLowerCase(),
-      goal: input.goal.toLowerCase()
+      goal: input.goal.toLowerCase(),
+      profile: normalizedProfile
     };
-
-    const { profile } = normalizedInput;
 
     // Create OpenAI instance with the API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -106,12 +127,13 @@ serve(async (req) => {
             role: "system", 
             content: `You are a certified strength and conditioning coach generating a personalized workout plan. 
             Consider the following user profile:
-            - Age: ${profile.age}
-            - Gender: ${profile.gender}
-            - Weight: ${profile.weight}
-            - Height: ${profile.height}
-            - Activity Level: ${profile.activityLevel}
-            - Fitness Goals: ${profile.goals.join(", ")}
+            ${normalizedProfile ? `
+            - Age: ${normalizedProfile.age}
+            - Gender: ${normalizedProfile.gender}
+            - Weight: ${normalizedProfile.weight}kg
+            - Height: ${normalizedProfile.height}cm
+            - Activity Level: ${normalizedProfile.activity_level}
+            - Fitness Level: ${normalizedProfile.fitness_level}` : 'No profile data available'}
             
             Adjust the exercise selection, intensity, and progression based on these factors.
             For older adults (>50), focus on joint-friendly exercises.
