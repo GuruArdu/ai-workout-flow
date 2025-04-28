@@ -1,3 +1,4 @@
+
 // Import from Deno standard library and third-party modules with proper URLs
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -75,17 +76,25 @@ serve(async (req) => {
 
     if (profileError) {
       console.error("Error fetching profile:", profileError);
+      if (profileError.code === 'PGRST116') {
+        return jsonError("Profile not found. Please complete your profile first.", 404);
+      }
+      return jsonError(`Error fetching profile: ${profileError.message}`, 500);
+    }
+
+    if (!profile) {
+      return jsonError("Profile not found. Please complete your profile first.", 404);
     }
 
     // Normalize measurements to metric system for consistency
-    const normalizedProfile = profile ? {
+    const normalizedProfile = {
       age: profile.age,
       gender: profile.gender,
       height: profile.height_unit === 'in' ? profile.height * 2.54 : profile.height,
       weight: profile.weight_unit === 'lbs' ? profile.weight * 0.453592 : profile.weight,
       activity_level: profile.activity_level,
       fitness_level: profile.fitness_level
-    } : null;
+    };
     
     const userId = user.id;
     console.log("Received workout request in Edge Function:", input);

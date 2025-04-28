@@ -68,7 +68,10 @@ const Profile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       
       try {
         const { data: profile, error } = await supabase
@@ -77,7 +80,19 @@ const Profile = () => {
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No profile found, which is okay for new users
+            console.log('No profile found, creating a new one');
+          } else {
+            console.error('Error loading profile:', error);
+            toast({
+              title: "Error",
+              description: "Failed to load profile data",
+              variant: "destructive",
+            });
+          }
+        }
 
         if (profile) {
           form.reset({
@@ -108,7 +123,15 @@ const Profile = () => {
   }, [user, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSaving(true);
 
     try {
@@ -128,7 +151,10 @@ const Profile = () => {
           updated_at: new Date().toISOString(),
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating profile:', error);
+        throw error;
+      }
 
       toast({
         title: "Profile updated",
@@ -339,7 +365,7 @@ const Profile = () => {
               />
 
               <Button type="submit" className="w-full" disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
               </Button>
             </form>
           </Form>
