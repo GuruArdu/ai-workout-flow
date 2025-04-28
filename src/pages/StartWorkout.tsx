@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +48,12 @@ const StartWorkout = () => {
 
       console.log("Sending workout request:", workoutData);
 
+      // Fixed: Added method explicitly and removed manual JSON.stringify
       const { data: payload, error } = await supabase.functions.invoke('generateWorkoutPlan', {
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        method: "POST",
+        body: {
           ...workoutData,
-        }),
+        },
       });
 
       if (error) {

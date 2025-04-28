@@ -8,6 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function for returning JSON errors
+const jsonError = (message: string, status: number) => {
+  return new Response(
+    JSON.stringify({ error: message }), 
+    { 
+      status: status,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+};
+
 // Define the Edge Function handler
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -16,17 +30,26 @@ serve(async (req) => {
   }
 
   try {
-    const input = await req.json();
+    // First get raw text - this won't throw on empty body
+    const rawBody = await req.text();
+    
+    if (!rawBody) {
+      console.error("Error: Empty request body");
+      return jsonError("Empty request body", 400);
+    }
+
+    let input;
+    try {
+      input = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error("Error parsing JSON:", parseError);
+      return jsonError("Invalid JSON in request body", 400);
+    }
+    
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), { 
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        }
-      });
+      return jsonError("Authentication required", 401);
     }
     
     // Extract the JWT token from the Authorization header
@@ -46,13 +69,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token or user not found" }), { 
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        }
-      });
+      return jsonError("Invalid token or user not found", 401);
     }
     
     const userId = user.id;
@@ -70,13 +87,7 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!openaiApiKey) {
-      return new Response(JSON.stringify({ error: "OpenAI API key not configured" }), { 
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        }
-      });
+      return jsonError("OpenAI API key not configured", 500);
     }
 
     // Use function calling for guaranteed JSON format
@@ -132,6 +143,12 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("OpenAI API error:", response.status, errorData);
+      return jsonError(`OpenAI API error: ${response.status}`, 500);
+    }
+
     const completion = await response.json();
 
     // Parse the function call result
@@ -141,7 +158,8 @@ serve(async (req) => {
       parsedPlan = JSON.parse(completion.choices[0].message.function_call.arguments);
       console.log("Successfully parsed workout plan from function call");
     } else {
-      throw new Error("Failed to get workout plan from OpenAI");
+      console.error("Failed to get workout plan from OpenAI:", completion);
+      return jsonError("Failed to get workout plan from OpenAI", 500);
     }
 
     // Store workout session
@@ -160,7 +178,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Error storing workout session:", insertError);
-      throw new Error(`Failed to store workout session: ${insertError.message}`);
+      return jsonError(`Failed to store workout session: ${insertError.message}`, 500);
     }
 
     return new Response(JSON.stringify({ 
@@ -175,12 +193,6 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("Error generating workout plan:", err);
-    return new Response(JSON.stringify({ error: err.message }), { 
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json"
-      }
-    });
+    return jsonError(err.message, 500);
   }
 });
