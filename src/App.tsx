@@ -13,6 +13,7 @@ import StartWorkout from "./pages/StartWorkout";
 import WorkoutDetail from "./pages/WorkoutDetail";
 import Tracker from "./pages/Tracker";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,11 @@ const AppRoutes = () => {
             <Tracker />
           </ProtectedRoute>
         } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
       </Route>
       
       {/* Catch-all route */}
@@ -90,4 +96,3 @@ const App = () => (
 );
 
 export default App;
-
