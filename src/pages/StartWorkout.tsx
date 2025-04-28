@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 type WorkoutStep = "muscles" | "style" | "duration" | "goal";
 
@@ -17,8 +18,9 @@ type WorkoutData = {
 
 const StartWorkout = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [step, setStep] = useState<WorkoutStep>("muscles");
-  const [data, setData] = useState<WorkoutData>({
+  const [workoutData, setWorkoutData] = useState<WorkoutData>({
     muscles: [],
     style: "gym",
     duration: 30,
@@ -26,8 +28,13 @@ const StartWorkout = () => {
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
+  if (!session) {
+    navigate("/auth");
+    return null;
+  }
+
   const updateData = <K extends keyof WorkoutData>(key: K, value: WorkoutData[K]) => {
-    setData((prev) => ({ ...prev, [key]: value }));
+    setWorkoutData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleGenerateWorkout = async () => {
@@ -38,10 +45,13 @@ const StartWorkout = () => {
         description: "Please wait while we create your personalized workout plan.",
       });
 
-      console.log("Sending workout request:", data);
+      console.log("Sending workout request:", workoutData);
 
-      const { data: result, error } = await supabase.functions.invoke('generateWorkoutPlan', {
-        body: data,
+      const { data: payload, error } = await supabase.functions.invoke('generateWorkoutPlan', {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...workoutData,
+        }),
       });
 
       if (error) {
@@ -49,9 +59,9 @@ const StartWorkout = () => {
         throw new Error(`Failed to generate workout plan: ${error.message}`);
       }
 
-      console.log("Workout generated:", result);
+      console.log("Workout generated:", payload);
 
-      if (!result.sessionId) {
+      if (!payload?.sessionId) {
         throw new Error("No session ID returned from API");
       }
 
@@ -60,7 +70,7 @@ const StartWorkout = () => {
         description: "Your personalized workout plan is ready.",
       });
 
-      navigate(`/workout/${result.sessionId}`);
+      navigate(`/workout/${payload.sessionId}`);
     } catch (error) {
       console.error("Error generating workout:", error);
       toast({
@@ -103,13 +113,13 @@ const StartWorkout = () => {
               {muscleGroups.map((muscle) => (
                 <div key={muscle.name}>
                   <Button
-                    variant={data.muscles.includes(muscle.name) ? "default" : "outline"}
-                    className={`w-full h-24 flex flex-col items-center justify-center gap-2 ${data.muscles.includes(muscle.name) ? "bg-blue-600 text-white" : ""}`}
+                    variant={workoutData.muscles.includes(muscle.name) ? "default" : "outline"}
+                    className={`w-full h-24 flex flex-col items-center justify-center gap-2 ${workoutData.muscles.includes(muscle.name) ? "bg-blue-600 text-white" : ""}`}
                     onClick={() => {
-                      if (data.muscles.includes(muscle.name)) {
-                        updateData("muscles", data.muscles.filter(m => m !== muscle.name));
+                      if (workoutData.muscles.includes(muscle.name)) {
+                        updateData("muscles", workoutData.muscles.filter(m => m !== muscle.name));
                       } else {
-                        updateData("muscles", [...data.muscles, muscle.name]);
+                        updateData("muscles", [...workoutData.muscles, muscle.name]);
                       }
                     }}
                   >
@@ -128,7 +138,7 @@ const StartWorkout = () => {
               {workoutStyles.map((style) => (
                 <Button
                   key={style}
-                  variant={data.style === style.toLowerCase() ? "default" : "outline"}
+                  variant={workoutData.style === style.toLowerCase() ? "default" : "outline"}
                   className="py-6"
                   onClick={() => updateData("style", style.toLowerCase())}
                 >
@@ -145,7 +155,7 @@ const StartWorkout = () => {
               {durations.map((mins) => (
                 <Button
                   key={mins}
-                  variant={data.duration === mins ? "default" : "outline"}
+                  variant={workoutData.duration === mins ? "default" : "outline"}
                   className="py-6"
                   onClick={() => updateData("duration", mins)}
                 >
@@ -162,7 +172,7 @@ const StartWorkout = () => {
               {goals.map((goal) => (
                 <Button
                   key={goal}
-                  variant={data.goal === goal.toLowerCase() ? "default" : "outline"}
+                  variant={workoutData.goal === goal.toLowerCase() ? "default" : "outline"}
                   className="py-6"
                   onClick={() => updateData("goal", goal.toLowerCase())}
                 >
@@ -269,7 +279,7 @@ const StartWorkout = () => {
               type="button" 
               onClick={handleNext}
               disabled={
-                (step === "muscles" && data.muscles.length === 0) ||
+                (step === "muscles" && workoutData.muscles.length === 0) ||
                 isGenerating
               }
               className="flex items-center gap-2"

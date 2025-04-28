@@ -3,8 +3,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // Define the Edge Function handler
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const input = await req.json();
     const authHeader = req.headers.get('Authorization');
@@ -13,6 +23,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Authentication required" }), { 
         status: 401,
         headers: {
+          ...corsHeaders,
           "Content-Type": "application/json"
         }
       });
@@ -38,6 +49,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid token or user not found" }), { 
         status: 401,
         headers: {
+          ...corsHeaders,
           "Content-Type": "application/json"
         }
       });
@@ -47,6 +59,13 @@ serve(async (req) => {
     console.log("Received workout request in Edge Function:", input);
     console.log("Authenticated user:", userId);
 
+    // Fix #7: Ensure style and goal are lowercase for consistency
+    const normalizedInput = {
+      ...input,
+      style: input.style.toLowerCase(),
+      goal: input.goal.toLowerCase()
+    };
+
     // Create OpenAI instance with the API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
@@ -54,6 +73,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "OpenAI API key not configured" }), { 
         status: 500,
         headers: {
+          ...corsHeaders,
           "Content-Type": "application/json"
         }
       });
@@ -77,10 +97,10 @@ serve(async (req) => {
           { 
             role: "user", 
             content: `Generate a workout plan with:
-              - Muscles: ${input.muscles.join(", ")}
-              - Style: ${input.style}
-              - Goal: ${input.goal}
-              - Duration: ${input.duration} minutes`
+              - Muscles: ${normalizedInput.muscles.join(", ")}
+              - Style: ${normalizedInput.style}
+              - Goal: ${normalizedInput.goal}
+              - Duration: ${normalizedInput.duration} minutes`
           }
         ],
         functions: [
@@ -129,10 +149,10 @@ serve(async (req) => {
       .from('workout_session')
       .insert({
         user_id: userId,
-        goal: input.goal,
-        style: input.style,
-        duration_min: input.duration,
-        primary_muscles: input.muscles,
+        goal: normalizedInput.goal,
+        style: normalizedInput.style,
+        duration_min: normalizedInput.duration,
+        primary_muscles: normalizedInput.muscles,
         ai_plan: parsedPlan
       })
       .select()
@@ -149,6 +169,7 @@ serve(async (req) => {
     }), { 
       status: 200,
       headers: {
+        ...corsHeaders,
         "Content-Type": "application/json"
       }
     });
@@ -157,6 +178,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: err.message }), { 
       status: 500,
       headers: {
+        ...corsHeaders,
         "Content-Type": "application/json"
       }
     });
