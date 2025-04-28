@@ -1,4 +1,3 @@
-
 // Import from Deno standard library and third-party modules with proper URLs
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -83,6 +82,8 @@ serve(async (req) => {
       goal: input.goal.toLowerCase()
     };
 
+    const { profile } = normalizedInput;
+
     // Create OpenAI instance with the API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
@@ -103,7 +104,21 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: "You are a certified strength and conditioning coach generating a personalized workout plan based on the user's goals, style preferences, and target muscle groups."
+            content: `You are a certified strength and conditioning coach generating a personalized workout plan. 
+            Consider the following user profile:
+            - Age: ${profile.age}
+            - Gender: ${profile.gender}
+            - Weight: ${profile.weight}
+            - Height: ${profile.height}
+            - Activity Level: ${profile.activityLevel}
+            - Fitness Goals: ${profile.goals.join(", ")}
+            
+            Adjust the exercise selection, intensity, and progression based on these factors.
+            For older adults (>50), focus on joint-friendly exercises.
+            For beginners, start with basic movement patterns.
+            For advanced users, incorporate progressive overload.
+            Consider gender-specific strength differences and goals.
+            Account for the user's current fitness level based on their activity level.`
           },
           { 
             role: "user", 

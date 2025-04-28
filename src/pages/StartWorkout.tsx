@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,13 +45,29 @@ const StartWorkout = () => {
         description: "Please wait while we create your personalized workout plan.",
       });
 
-      console.log("Sending workout request:", workoutData);
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .single();
 
-      // Fixed: Added method explicitly and removed manual JSON.stringify
+      if (profileError) {
+        throw new Error(`Failed to get user profile: ${profileError.message}`);
+      }
+
+      console.log("Sending workout request with profile:", { ...workoutData, profile });
+
       const { data: payload, error } = await supabase.functions.invoke('generateWorkoutPlan', {
         method: "POST",
         body: {
           ...workoutData,
+          profile: {
+            age: profile.age,
+            gender: profile.gender,
+            height: profile.height,
+            weight: profile.weight,
+            activityLevel: profile.activity_level,
+            goals: profile.goals,
+          }
         },
       });
 
