@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type WorkoutStep = "muscles" | "style" | "duration" | "goal";
 
@@ -40,27 +40,16 @@ const StartWorkout = () => {
 
       console.log("Sending workout request:", data);
 
-      // Use the correct Edge Function path
-      const response = await fetch("/functions/v1/generateWorkoutPlan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      const { data: result, error } = await supabase.functions.invoke('generateWorkoutPlan', {
+        body: data,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", response.status, errorText);
-        throw new Error(`Failed to generate workout plan: ${response.status}`);
+      if (error) {
+        console.error("Error response:", error);
+        throw new Error(`Failed to generate workout plan: ${error.message}`);
       }
 
-      const result = await response.json();
       console.log("Workout generated:", result);
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
 
       if (!result.sessionId) {
         throw new Error("No session ID returned from API");
