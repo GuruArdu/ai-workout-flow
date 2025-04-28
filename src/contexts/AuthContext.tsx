@@ -17,13 +17,31 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ 
+  children,
+  experimentalBypass = false 
+}: { 
+  children: React.ReactNode;
+  experimentalBypass?: boolean;
+}) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (experimentalBypass) {
+      const mockUser = {
+        id: 'preview-user',
+        email: 'preview@example.com',
+        role: 'authenticated',
+      };
+      setUser(mockUser as User);
+      setSession({ user: mockUser } as Session);
+      setLoading(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -51,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, experimentalBypass]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -96,15 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Social login is in development. Proceeding to dashboard..."
       });
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'demo@example.com',
-        password: 'demo123'
-      });
-      
-      if (error) {
-        console.log("Development login simulation failed:", error);
-        navigate('/dashboard');
-      }
+      navigate('/dashboard');
       
     } catch (error: any) {
       console.log("Social login error (development):", error);
@@ -128,17 +138,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const contextValue = {
+    session,
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    signInWithProvider,
+    isAuthenticated: experimentalBypass ? true : !!user
+  };
+
   return (
-    <AuthContext.Provider value={{
-      session,
-      user,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      signInWithProvider,
-      isAuthenticated: !!user
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

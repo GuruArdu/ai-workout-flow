@@ -3,3 +3,6 @@ project_id = "iaycwyrtkkzltzmwubja"
 
 [functions.generateWorkoutPlan]
 verify_jwt = true
+
+[functions._auth/bypass-dev]
+verify_jwt = false
