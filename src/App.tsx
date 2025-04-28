@@ -81,7 +81,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
+        <AuthProvider experimentalBypass={true}>
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
@@ -90,3 +90,4 @@ const App = () => (
 );
 
 export default App;
+
