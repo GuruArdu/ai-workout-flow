@@ -1,17 +1,27 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, LineChart, ArrowRight, Calendar, TrendingUp } from "lucide-react";
+import { Dumbbell, LineChart, ArrowRight, Calendar, TrendingUp, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold">Welcome to FitFlow AI</h1>
-        <p className="text-gray-500">Your personalized workout companion</p>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Welcome to FitFlow AI</h1>
+          <p className="text-gray-500">
+            {user?.email ? `Logged in as ${user.email}` : 'Your personalized workout companion'}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
       </header>
       
       <div className="grid md:grid-cols-2 gap-6 mb-8">

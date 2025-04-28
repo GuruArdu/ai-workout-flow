@@ -1,17 +1,29 @@
 
 import { OpenAI } from "lovable/ai";
 import { sql } from "lovable/db";
+import { OPENAI_API_KEY } from "../../../src/integrations/supabase/client";
 
 // Define the Edge Function handler
 export const POST = async ({ json, auth, error }) => {
   try {
     const input = await json();
-    const userId = auth.userId;
+    const userId = auth?.userId;
+    
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), { 
+        status: 401,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }
 
     console.log("Received workout request in Edge Function:", input);
 
-    // Create OpenAI instance - Lovable automatically injects the API key
-    const openai = new OpenAI();
+    // Create OpenAI instance with the API key
+    const openai = new OpenAI({
+      apiKey: OPENAI_API_KEY
+    });
 
     // Use function calling for guaranteed JSON format
     const completion = await openai.chat.completions.create({

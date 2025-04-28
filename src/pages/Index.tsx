@@ -1,11 +1,20 @@
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Dumbbell, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -35,44 +44,11 @@ const Index = () => {
           <h2 className="text-2xl font-bold text-center mb-6">Get Started</h2>
           <div className="space-y-4">
             <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => navigate("/onboarding")}
-            >
-              Continue with Google
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => navigate("/onboarding")}
-            >
-              Continue with Apple
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-between"
-              onClick={() => navigate("/onboarding")}
-            >
-              Continue with Facebook
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300"></span>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or</span>
-              </div>
-            </div>
-            
-            <Button 
               className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={() => navigate("/onboarding")}
+              onClick={() => navigate("/auth")}
             >
-              Continue as Guest
+              Sign In or Create Account
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             
             <p className="text-xs text-center text-gray-500 mt-4">

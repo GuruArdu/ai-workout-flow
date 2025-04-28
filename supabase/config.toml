@@ -1,1 +1,5 @@
+
 project_id = "iaycwyrtkkzltzmwubja"
+
+[functions.generateWorkoutPlan]
+verify_jwt = true
