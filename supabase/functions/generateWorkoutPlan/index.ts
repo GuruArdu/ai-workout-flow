@@ -29,7 +29,6 @@ serve(async (req) => {
   }
 
   try {
-    // First get raw text - this won't throw on empty body
     const rawBody = await req.text();
     
     if (!rawBody) {
@@ -51,10 +50,8 @@ serve(async (req) => {
       return jsonError("Authentication required", 401);
     }
     
-    // Extract the JWT token from the Authorization header
     const token = authHeader.replace('Bearer ', '');
     
-    // Create a Supabase client using the API URL and anon key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://iaycwyrtkkzltzmwubja.supabase.co';
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN3eXJ0a2t6bHR6bXd1YmphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1NTU0OTUsImV4cCI6MjA2MTEzMTQ5NX0.Wp-xgFZwsoSQral_MDAw6INjwu-HuQarzKlkgOUijEY';
     
@@ -64,14 +61,12 @@ serve(async (req) => {
       },
     });
     
-    // Get the user ID from the JWT token
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       return jsonError("Invalid token or user not found", 401);
     }
     
-    // Get user profile data
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -112,7 +107,7 @@ serve(async (req) => {
       return jsonError("OpenAI API key not configured", 500);
     }
 
-    // Use function calling for guaranteed JSON format
+    // Use function calling for guaranteed JSON format and include profile data
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {

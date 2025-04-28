@@ -11,31 +11,43 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          activity_level: string | null
           age: number | null
           fitness_level: string | null
+          gender: string | null
           height: number | null
+          height_unit: string | null
           id: string
           updated_at: string | null
           username: string | null
           weight: number | null
+          weight_unit: string | null
         }
         Insert: {
+          activity_level?: string | null
           age?: number | null
           fitness_level?: string | null
+          gender?: string | null
           height?: number | null
+          height_unit?: string | null
           id: string
           updated_at?: string | null
           username?: string | null
           weight?: number | null
+          weight_unit?: string | null
         }
         Update: {
+          activity_level?: string | null
           age?: number | null
           fitness_level?: string | null
+          gender?: string | null
           height?: number | null
+          height_unit?: string | null
           id?: string
           updated_at?: string | null
           username?: string | null
           weight?: number | null
+          weight_unit?: string | null
         }
         Relationships: []
       }
