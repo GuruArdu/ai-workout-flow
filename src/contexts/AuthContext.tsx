@@ -96,17 +96,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithProvider = async (provider: 'google' | 'apple' | 'facebook') => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Show a toast to indicate the process is starting
+      toast({
+        title: `Connecting to ${provider}...`,
+        description: "You'll be redirected to continue login."
+      });
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: false,
         },
       });
+      
       if (error) throw error;
+      
+      // If we have a URL and no error, the OAuth flow is proceeding correctly
+      if (data?.url) {
+        console.log(`${provider} auth initiated, redirecting to provider`);
+      }
     } catch (error: any) {
+      console.error(`${provider} login error:`, error);
       toast({
         title: `${provider} login failed`,
-        description: error.message,
+        description: error.message || `This provider may not be enabled. Please check your Supabase configuration.`,
         variant: "destructive"
       });
       throw error;
