@@ -48,28 +48,35 @@ const StartWorkout = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         throw new Error(`Failed to get user profile: ${profileError.message}`);
       }
 
+      if (!profile) {
+        throw new Error("Profile not found. Please complete your profile first.");
+      }
+
       console.log("Sending workout request with profile:", { ...workoutData, profile });
 
-      const { data: payload, error } = await supabase.functions.invoke('generateWorkoutPlan', {
-        method: "POST",
-        body: {
-          ...workoutData,
-          profile: {
-            age: profile.age,
-            gender: profile.gender,
-            height: profile.height,
-            weight: profile.weight,
-            activityLevel: profile.activity_level,
-            goals: profile.goals,
-          }
-        },
-      });
+      const { data: payload, error } = await supabase.functions.invoke<"generateWorkoutPlan">(
+        'generateWorkoutPlan',
+        {
+          method: "POST",
+          body: {
+            ...workoutData,
+            profile: {
+              age: profile.age,
+              gender: profile.gender,
+              height: profile.height,
+              weight: profile.weight,
+              activityLevel: profile.activity_level,
+              goals: profile.goals,
+            }
+          },
+        }
+      );
 
       if (error) {
         console.error("Error response:", error);
