@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,32 +38,34 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
       
-      {/* Protected routes */}
-      <Route path="/onboarding" element={
-        <ProtectedRoute>
-          <Onboarding />
-        </ProtectedRoute>
-      } />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/start-workout" element={
-        <ProtectedRoute>
-          <StartWorkout />
-        </ProtectedRoute>
-      } />
-      <Route path="/workout/:id" element={
-        <ProtectedRoute>
-          <WorkoutDetail />
-        </ProtectedRoute>
-      } />
-      <Route path="/tracker" element={
-        <ProtectedRoute>
-          <Tracker />
-        </ProtectedRoute>
-      } />
+      {/* Protected routes wrapped in MainLayout */}
+      <Route element={<MainLayout />}>
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/start-workout" element={
+          <ProtectedRoute>
+            <StartWorkout />
+          </ProtectedRoute>
+        } />
+        <Route path="/workout/:id" element={
+          <ProtectedRoute>
+            <WorkoutDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/tracker" element={
+          <ProtectedRoute>
+            <Tracker />
+          </ProtectedRoute>
+        } />
+      </Route>
       
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
