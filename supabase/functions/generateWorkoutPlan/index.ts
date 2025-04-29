@@ -79,6 +79,12 @@ serve(async (req) => {
       return jsonError("Invalid JSON in request body", 400);
     }
     
+    // Extract userId from request body
+    const { userId, ...payload } = input;
+    if (!userId) {
+      return jsonError("userId missing", 400);
+    }
+    
     // Get authentication token from request header
     const authHeader = req.headers.get('Authorization');
     
@@ -95,16 +101,20 @@ serve(async (req) => {
       return jsonError("Invalid token or user not found", 401);
     }
     
-    const userId = user.id;
+    // Ensure the userId matches the authenticated user
+    if (userId !== user.id) {
+      return jsonError("Unauthorized: User ID mismatch", 403);
+    }
+    
     console.log("Authenticated user:", userId);
 
     const {
       muscles, style, duration, goal,    // wizard
       age, gender, height, height_unit,
       weight, weight_unit, activity_level
-    } = input;
+    } = payload;
 
-    console.log("Received workout request:", input);
+    console.log("Received workout request:", payload);
 
     // ── 2. fetch recent RPE for auto-progression ───────
     const { data: history } = await supabase
@@ -148,7 +158,7 @@ serve(async (req) => {
       .from("workout_session")
       .insert({
         user_id: userId,
-        goal, style, duration_min:duration,
+        goal, style, duration_min: duration,
         primary_muscles: muscles,
         ai_plan: plan
       })

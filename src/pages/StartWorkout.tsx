@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,13 +60,14 @@ const StartWorkout = () => {
         throw new Error("Profile not found. Please complete your profile first.");
       }
 
-      console.log("Sending workout request with data:", { ...workoutData, ...profile });
+      console.log("Sending workout request with data:", { userId: session.user.id, ...workoutData, ...profile });
 
       const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
         'generateWorkoutPlan',
         {
           method: "POST",
           body: {
+            userId: session.user.id,
             ...workoutData,
             age: profile.age,
             gender: profile.gender,
