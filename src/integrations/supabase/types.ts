@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      exercise_log: {
+        Row: {
+          date: string | null
+          exercise_name: string
+          id: string
+          notes: string | null
+          sets: Json[]
+          user_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          date?: string | null
+          exercise_name: string
+          id?: string
+          notes?: string | null
+          sets: Json[]
+          user_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          date?: string | null
+          exercise_name?: string
+          id?: string
+          notes?: string | null
+          sets?: Json[]
+          user_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_log_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activity_level: string | null
@@ -48,6 +86,39 @@ export type Database = {
           username?: string | null
           weight?: number | null
           weight_unit?: string | null
+        }
+        Relationships: []
+      }
+      workout_session: {
+        Row: {
+          ai_plan: Json
+          date: string | null
+          duration_min: number
+          goal: string
+          id: string
+          primary_muscles: string[]
+          style: string
+          user_id: string
+        }
+        Insert: {
+          ai_plan: Json
+          date?: string | null
+          duration_min: number
+          goal: string
+          id?: string
+          primary_muscles: string[]
+          style: string
+          user_id: string
+        }
+        Update: {
+          ai_plan?: Json
+          date?: string | null
+          duration_min?: number
+          goal?: string
+          id?: string
+          primary_muscles?: string[]
+          style?: string
+          user_id?: string
         }
         Relationships: []
       }

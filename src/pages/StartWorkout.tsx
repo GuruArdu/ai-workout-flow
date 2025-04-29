@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +59,7 @@ const StartWorkout = () => {
         throw new Error("Profile not found. Please complete your profile first.");
       }
 
-      console.log("Sending workout request with profile:", { ...workoutData, profile });
+      console.log("Sending workout request with data:", { ...workoutData, ...profile });
 
       const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
         'generateWorkoutPlan',
@@ -68,14 +67,13 @@ const StartWorkout = () => {
           method: "POST",
           body: {
             ...workoutData,
-            profile: {
-              age: profile.age,
-              gender: profile.gender,
-              height: profile.height,
-              weight: profile.weight,
-              activityLevel: profile.activity_level,
-              goals: profile.goals,
-            }
+            age: profile.age,
+            gender: profile.gender,
+            height: profile.height,
+            height_unit: profile.height_unit || "cm",
+            weight: profile.weight,
+            weight_unit: profile.weight_unit || "kg",
+            activity_level: profile.activity_level
           },
         }
       );
