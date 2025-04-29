@@ -1,219 +1,138 @@
-
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Apple, Facebook } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { signIn, signUp, signInWithProvider } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signInWithProvider } = useAuth();
-  const navigate = useNavigate();
-
-  const handleAuth = async (action: 'signin' | 'signup') => {
-    if (!email || !password) return;
+  const [devMode, setDevMode] = useState(false);
+  
+  // Check if dev mode is enabled
+  useEffect(() => {
+    const isDevMode = localStorage.getItem('devModeEnabled') === 'true';
+    setDevMode(isDevMode);
+  }, []);
+  
+  const toggleDevMode = () => {
+    const newMode = !devMode;
+    localStorage.setItem('devModeEnabled', newMode.toString());
+    setDevMode(newMode);
     
-    setLoading(true);
-    try {
-      if (action === 'signin') {
-        await signIn(email, password);
-      } else {
-        const { error } = await signUp(email, password);
-        // Always redirect to prompt, even if error is "User already registered"
-        if (!error || error.message.includes("already registered")) {
-          navigate("/verify-prompt");
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-    } finally {
-      setLoading(false);
+    toast({
+      title: newMode ? "Dev Mode Enabled" : "Dev Mode Disabled",
+      description: newMode 
+        ? "You can now access protected routes without authentication." 
+        : "Authentication is now required for protected routes.",
+      duration: 3000
+    });
+    
+    // If enabling dev mode, redirect to dashboard
+    if (newMode) {
+      setTimeout(() => navigate('/dashboard'), 1000);
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'apple' | 'facebook') => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
     try {
-      await signInWithProvider(provider);
+      await signIn(email, password);
+      navigate('/dashboard');
     } catch (error) {
-      console.error(`${provider} authentication error:`, error);
+      console.error("Authentication error:", error);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-800 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center mb-6">
-          <Dumbbell className="h-10 w-10 text-white" />
-          <h1 className="text-3xl font-bold text-white ml-2">FitFlow AI</h1>
+        {/* Dev Mode Button - Very Prominent */}
+        <div className="mb-6 flex justify-center">
+          <button
+            onClick={toggleDevMode}
+            className={`px-6 py-3 text-base font-medium rounded-lg shadow-lg border-2 transition-all w-full ${
+              devMode 
+                ? "bg-green-500 text-white border-green-600 hover:bg-green-600" 
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            {devMode ? "🔓 Dev Mode: ON (Click to Dashboard)" : "🔒 Dev Mode: OFF (Enable to Skip Login)"}
+          </button>
         </div>
         
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+        {/* Regular authentication form */}
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold">Welcome to FitFlow AI</h1>
+            <p className="text-gray-600">Sign in or create an account</p>
+          </div>
           
-          <TabsContent value="signin">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sign In</CardTitle>
-                <CardDescription>
-                  Enter your credentials to access your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="pt-2">
-                  <Button 
-                    className="w-full"
-                    onClick={() => handleAuth('signin')}
-                    disabled={loading}
-                  >
-                    {loading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </div>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-background px-2 text-xs text-muted-foreground">
-                      OR CONTINUE WITH
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('google')}
-                  >
-                    <FcGoogle className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('apple')}
-                  >
-                    <Apple className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('facebook')}
-                  >
-                    <Facebook className="h-5 w-5 text-blue-600" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Please wait..." : "Sign In"}
+            </Button>
+          </form>
           
-          <TabsContent value="signup">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create an Account</CardTitle>
-                <CardDescription>
-                  Enter your details to create a new account
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-email">Email</Label>
-                  <Input 
-                    id="new-email" 
-                    type="email" 
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Password</Label>
-                  <Input 
-                    id="new-password" 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <div className="pt-2">
-                  <Button 
-                    className="w-full"
-                    onClick={() => handleAuth('signup')}
-                    disabled={loading}
-                  >
-                    {loading ? "Creating account..." : "Sign Up"}
-                  </Button>
-                </div>
-                
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-background px-2 text-xs text-muted-foreground">
-                      OR CONTINUE WITH
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('google')}
-                  >
-                    <FcGoogle className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('apple')}
-                  >
-                    <Apple className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleSocialAuth('facebook')}
-                  >
-                    <Facebook className="h-5 w-5 text-blue-600" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              <Button
+                type="button"
+                onClick={() => signInWithProvider("google")}
+                className="bg-white text-gray-800 border border-gray-300 hover:bg-gray-100"
+              >
+                Google
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

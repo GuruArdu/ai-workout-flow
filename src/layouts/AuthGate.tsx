@@ -1,4 +1,3 @@
-
 import { ReactNode, useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,20 +12,29 @@ const AuthGate = ({ children }: AuthGateProps) => {
 
   useEffect(() => {
     // Check for development mode bypass
-    const checkDevMode = async () => {
+    const checkDevMode = () => {
       try {
-        // Check if we're in development mode
-        if (import.meta.env.DEV) {
-          // You could toggle this with localStorage to enable/disable dev mode
-          const devModeEnabled = localStorage.getItem('devModeEnabled') === 'true';
-          setIsDevBypass(devModeEnabled);
-        }
+        // Check if dev mode is enabled in localStorage
+        const devModeEnabled = localStorage.getItem('devModeEnabled') === 'true';
+        setIsDevBypass(devModeEnabled);
+        
+        // Add event listener to detect changes in localStorage
+        const handleStorageChange = (e: StorageEvent) => {
+          if (e.key === 'devModeEnabled') {
+            setIsDevBypass(e.newValue === 'true');
+          }
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
       } catch (error) {
         console.error("Error checking dev mode:", error);
+        return null;
       }
     };
     
-    checkDevMode();
+    const cleanup = checkDevMode();
+    return cleanup;
   }, []);
 
   // While checking auth status, show loading state
