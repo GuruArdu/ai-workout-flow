@@ -151,9 +151,9 @@ export function AuthProvider({
   const loadUserProfile = async (userId: string) => {
     try {
       const { data: row, error } = await supabase
-        .from("profiles")
+        .from("profile")
         .select("*")
-        .eq("id", userId)
+        .eq("user_id", userId)
         .maybeSingle();
       
       if (error && error.code !== 'PGRST116') {
@@ -169,8 +169,8 @@ export function AuthProvider({
       // If no profile exists yet, create one
       if (!row || error?.code === 'PGRST116') {
         const { data: inserted, error: insertError } = await supabase
-          .from("profiles")
-          .insert({ id: userId })
+          .from("profile")
+          .insert({ user_id: userId })
           .select()
           .single();
           
