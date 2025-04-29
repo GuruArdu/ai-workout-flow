@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,9 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useDevBypass } from "@/hooks/useDevBypass";
 import { Loader2 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const profileFormSchema = z.object({
   username: z.string().min(3).max(50).optional(),
@@ -48,9 +46,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Profile = () => {
-  const { user } = useAuth();
-  const devUser = useDevBypass();
-  const actualUser = user || devUser;
+  const currentUser = useCurrentUser();
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -72,7 +68,7 @@ const Profile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!actualUser) {
+      if (!currentUser) {
         setLoading(false);
         return;
       }
@@ -81,7 +77,7 @@ const Profile = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', actualUser.id)
+          .eq('id', currentUser.id)
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
@@ -119,10 +115,10 @@ const Profile = () => {
     };
 
     loadProfile();
-  }, [actualUser, form]);
+  }, [currentUser, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!actualUser) {
+    if (!currentUser) {
       toast({
         title: "Error",
         description: "You must be logged in to update your profile",
@@ -137,7 +133,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: actualUser.id,
+          id: currentUser.id,
           username: values.username || null,
           height: values.height ? Number(values.height) : null,
           weight: values.weight ? Number(values.weight) : null,

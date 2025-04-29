@@ -29,8 +29,13 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Determine if we should use experimental bypass
+  const shouldBypass = experimentalBypass || 
+    import.meta.env.DEV || 
+    window.location.hostname.endsWith(".lovable.app");
+
   useEffect(() => {
-    if (experimentalBypass) {
+    if (shouldBypass) {
       const mockUser = {
         id: 'preview-user',
         email: 'preview@example.com',
@@ -69,7 +74,7 @@ export function AuthProvider({
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, experimentalBypass]);
+  }, [navigate, shouldBypass]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -146,7 +151,7 @@ export function AuthProvider({
     signUp,
     signOut,
     signInWithProvider,
-    isAuthenticated: experimentalBypass ? true : !!user
+    isAuthenticated: shouldBypass ? true : !!user
   };
 
   return (
