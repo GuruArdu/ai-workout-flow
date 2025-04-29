@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -108,7 +109,8 @@ const StartWorkout = () => {
     }
   };
 
-  const muscleGroups = [
+  // Memoize the muscle groups to improve performance
+  const muscleGroups = useMemo(() => [
     { name: "Chest", icon: "💪" },
     { name: "Back", icon: "🔙" },
     { name: "Shoulders", icon: "🤸" },
@@ -117,17 +119,20 @@ const StartWorkout = () => {
     { name: "Legs", icon: "🦵" },
     { name: "Glutes", icon: "🍑" },
     { name: "Full Body", icon: "👤" },
-  ];
+  ], []);
 
-  const workoutStyles = [
+  // Memoize the workout styles to improve performance
+  const workoutStyles = useMemo(() => [
     "Gym", "Bodyweight", "Yoga", "Pilates", "HIIT", "Functional"
-  ];
+  ], []);
 
-  const durations = [5, 15, 30, 45, 60, 90];
+  // Memoize the durations to improve performance
+  const durations = useMemo(() => [5, 15, 30, 45, 60, 90], []);
 
-  const goals = [
+  // Memoize the goals to improve performance
+  const goals = useMemo(() => [
     "Muscle Endurance", "Power", "Strength", "Hypertrophy", "Stretch", "Fat Loss"
-  ];
+  ], []);
 
   const renderStep = () => {
     switch (step) {
