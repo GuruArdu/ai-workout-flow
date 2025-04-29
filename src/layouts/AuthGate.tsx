@@ -1,16 +1,19 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthGateProps {
   children: ReactNode;
 }
 
 const AuthGate = ({ children }: AuthGateProps) => {
-  const currentUser = useCurrentUser();
+  const { user, loading } = useAuth();
 
-  // Allow access if real user or preview user
-  if (currentUser) return <>{children}</>;
+  // While checking auth status, show loading state
+  if (loading) return null;
+
+  // Allow access if authenticated user
+  if (user) return <>{children}</>;
 
   // Otherwise redirect to auth page
   return <Navigate to="/auth" replace />;

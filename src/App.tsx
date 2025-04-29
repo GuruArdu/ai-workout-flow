@@ -78,7 +78,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider experimentalBypass={true}>
+        <AuthProvider>
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>

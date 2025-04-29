@@ -18,35 +18,16 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ 
-  children,
-  experimentalBypass = false 
+  children 
 }: { 
   children: React.ReactNode;
-  experimentalBypass?: boolean;
 }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Determine if we should use experimental bypass
-  const shouldBypass = experimentalBypass || 
-    import.meta.env.DEV || 
-    window.location.hostname.endsWith(".lovable.app");
-
   useEffect(() => {
-    if (shouldBypass) {
-      const mockUser = {
-        id: 'preview-user',
-        email: 'preview@example.com',
-        role: 'authenticated',
-      };
-      setUser(mockUser as User);
-      setSession({ user: mockUser } as Session);
-      setLoading(false);
-      return;
-    }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -74,7 +55,7 @@ export function AuthProvider({
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, shouldBypass]);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -151,7 +132,7 @@ export function AuthProvider({
     signUp,
     signOut,
     signInWithProvider,
-    isAuthenticated: shouldBypass ? true : !!user
+    isAuthenticated: !!user
   };
 
   return (
