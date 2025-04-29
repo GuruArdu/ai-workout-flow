@@ -1,8 +1,10 @@
 
+import React from "react";
 import { LayoutDashboard, Play, BarChart, User } from "lucide-react";
 import NavLink from "./NavLink";
 
 const Sidebar = () => {
+  console.log("Rendering Sidebar");
   return (
     <aside className="w-60 bg-white border-r h-screen hidden md:flex flex-col py-6 fixed">
       <div className="px-4 mb-6">

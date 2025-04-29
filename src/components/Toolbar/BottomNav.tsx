@@ -1,8 +1,10 @@
 
-import { LayoutDashboard, Play, BarChart, Utensils, User } from "lucide-react";
+import React from "react";
+import { LayoutDashboard, Play, BarChart, User } from "lucide-react";
 import NavLink from "./NavLink";
 
 const BottomNav = () => {
+  console.log("Rendering BottomNav");
   return (
     <nav className="fixed bottom-0 w-full bg-white border-t flex md:hidden justify-between px-4 py-2 z-10">
       <NavLink to="/dashboard" icon={<LayoutDashboard className="h-5 w-5" />} label="Dashboard" />
