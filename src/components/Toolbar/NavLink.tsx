@@ -1,30 +1,27 @@
 
 import React from "react";
-import { NavLink as RouterNavLink } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { NavLink as RRNavLink } from "react-router-dom";
+import clsx from "clsx";
 
-interface NavLinkProps {
+type Props = {
   to: string;
   icon: React.ReactNode;
   label: string;
-}
-
-const NavLink = ({ to, icon, label }: NavLinkProps) => {
-  return (
-    <RouterNavLink
-      to={to}
-      className={({ isActive }) =>
-        cn(
-          "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
-          "hover:bg-gray-100",
-          isActive ? "text-blue-600 bg-blue-50" : "text-gray-600"
-        )
-      }
-    >
-      {icon}
-      <span>{label}</span>
-    </RouterNavLink>
-  );
 };
+
+const NavLink = ({ to, icon, label }: Props) => (
+  <RRNavLink
+    to={to}
+    className={({ isActive }) =>
+      clsx(
+        "flex flex-col items-center gap-1 px-2 py-1 text-xs",
+        isActive ? "text-blue-600" : "text-gray-600 hover:text-blue-500"
+      )
+    }
+  >
+    {icon}
+    <span>{label}</span>
+  </RRNavLink>
+);
 
 export default NavLink;
