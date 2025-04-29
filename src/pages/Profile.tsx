@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,6 +25,8 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDevUser } from "@/hooks/useDevUser";
+import { useNavigate } from "react-router-dom";
 
 const profileFormSchema = z.object({
   username: z.string().min(3).max(50).optional(),
@@ -47,6 +50,11 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Profile = () => {
   const { user, loadUserProfile } = useAuth();
+  const devUser = useDevUser();
+  const navigate = useNavigate();
+  
+  // Get either authenticated user or dev user ID
+  const userId = user?.id || (devUser?.id || null);
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,28 +74,61 @@ const Profile = () => {
     },
   });
 
+  // Redirect if no user (real or dev)
+  useEffect(() => {
+    if (!loading && !userId) {
+      navigate("/auth");
+    }
+  }, [loading, userId, navigate]);
+
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user) {
+      if (!userId) {
         setLoading(false);
         return;
       }
       
       try {
-        const profile = await loadUserProfile(user.id);
-        
-        if (profile) {
-          form.reset({
-            username: profile.username || "",
-            height: profile.height?.toString() || "",
-            weight: profile.weight?.toString() || "",
-            age: profile.age?.toString() || "",
-            fitness_level: profile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
-            activity_level: profile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
-            gender: profile.gender as "male" | "female" | "other" | undefined,
-            height_unit: profile.height_unit || "cm",
-            weight_unit: profile.weight_unit || "kg",
-          });
+        // For dev user, first check if a profile already exists
+        if (devUser) {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', devUser.id)
+            .single();
+            
+          if (existingProfile) {
+            form.reset({
+              username: existingProfile.username || "",
+              height: existingProfile.height?.toString() || "",
+              weight: existingProfile.weight?.toString() || "",
+              age: existingProfile.age?.toString() || "",
+              fitness_level: existingProfile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
+              activity_level: existingProfile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
+              gender: existingProfile.gender as "male" | "female" | "other" | undefined,
+              height_unit: existingProfile.height_unit || "cm",
+              weight_unit: existingProfile.weight_unit || "kg",
+            });
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Normal user flow with auth context
+          const profile = await loadUserProfile(userId);
+          
+          if (profile) {
+            form.reset({
+              username: profile.username || "",
+              height: profile.height?.toString() || "",
+              weight: profile.weight?.toString() || "",
+              age: profile.age?.toString() || "",
+              fitness_level: profile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
+              activity_level: profile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
+              gender: profile.gender as "male" | "female" | "other" | undefined,
+              height_unit: profile.height_unit || "cm",
+              weight_unit: profile.weight_unit || "kg",
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -102,10 +143,10 @@ const Profile = () => {
     };
 
     loadProfile();
-  }, [user, form, loadUserProfile]);
+  }, [userId, form, loadUserProfile, devUser]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!user) {
+    if (!userId) {
       toast({
         title: "Error",
         description: "You must be logged in to update your profile",
@@ -120,7 +161,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          id: userId,
           username: values.username || null,
           height: values.height ? Number(values.height) : null,
           weight: values.weight ? Number(values.weight) : null,
@@ -162,11 +203,16 @@ const Profile = () => {
     );
   }
 
+  // Show form only if we have a userId (real or dev)
+  if (!userId) {
+    return null;
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
+          <CardTitle>Profile Settings {devUser ? "(Development Mode)" : ""}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
