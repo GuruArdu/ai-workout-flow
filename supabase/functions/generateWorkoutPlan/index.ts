@@ -1,11 +1,45 @@
 
-// Import from Deno standard library and third-party modules with proper URLs
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// deno: edge runtime
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { OpenAI } from "https://deno.land/x/openai@4.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
+
+const openai = new OpenAI({
+  apiKey: Deno.env.get("OPENAI_API_KEY")!,
+});
+
+const schema = {
+  name: "build_workout_plan",
+  description: "Return a structured workout",
+  parameters: {
+    type: "object",
+    properties: {
+      exercises: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name:   { type:"string" },
+            sets:   { type:"integer" },
+            reps:   { type:"integer" },
+            weight: { type:"string" }
+          },
+          required:["name","sets","reps"]
+        }
+      }
+    },
+    required:["exercises"]
+  }
 };
 
 // Helper function for returning JSON errors
@@ -22,7 +56,6 @@ const jsonError = (message: string, status: number) => {
   );
 };
 
-// Define the Edge Function handler
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -30,21 +63,23 @@ serve(async (req) => {
   }
 
   try {
-    const rawBody = await req.text();
+    // ── 1. parse body ──────────────────────────────────
+    const raw = await req.text();
     
-    if (!rawBody) {
+    if (!raw) {
       console.error("Error: Empty request body");
       return jsonError("Empty request body", 400);
     }
 
     let input;
     try {
-      input = JSON.parse(rawBody);
+      input = JSON.parse(raw);
     } catch (parseError) {
       console.error("Error parsing JSON:", parseError);
       return jsonError("Invalid JSON in request body", 400);
     }
     
+    // Get authentication token from request header
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -53,185 +88,88 @@ serve(async (req) => {
     
     const token = authHeader.replace('Bearer ', '');
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://iaycwyrtkkzltzmwubja.supabase.co';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN3eXJ0a2t6bHR6bXd1YmphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1NTU0OTUsImV4cCI6MjA2MTEzMTQ5NX0.Wp-xgFZwsoSQral_MDAw6INjwu-HuQarzKlkgOUijEY';
-    
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    });
-    
+    // Verify the token and get user info
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       return jsonError("Invalid token or user not found", 401);
     }
     
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      if (profileError.code === 'PGRST116') {
-        return jsonError("Profile not found. Please complete your profile first.", 404);
-      }
-      return jsonError(`Error fetching profile: ${profileError.message}`, 500);
-    }
-
-    if (!profile) {
-      return jsonError("Profile not found. Please complete your profile first.", 404);
-    }
-
-    // Normalize measurements to metric system for consistency
-    const normalizedProfile = {
-      age: profile.age,
-      gender: profile.gender,
-      height: profile.height_unit === 'in' ? profile.height * 2.54 : profile.height,
-      weight: profile.weight_unit === 'lbs' ? profile.weight * 0.453592 : profile.weight,
-      activity_level: profile.activity_level,
-      fitness_level: profile.fitness_level
-    };
-    
     const userId = user.id;
-    console.log("Received workout request in Edge Function:", input);
     console.log("Authenticated user:", userId);
-    console.log("User profile:", normalizedProfile);
 
-    // Fix #7: Ensure style and goal are lowercase for consistency
-    const normalizedInput = {
-      ...input,
-      style: input.style.toLowerCase(),
-      goal: input.goal.toLowerCase(),
-      profile: normalizedProfile
-    };
+    const {
+      muscles, style, duration, goal,    // wizard
+      age, gender, height, height_unit,
+      weight, weight_unit, activity_level
+    } = input;
 
-    // Create OpenAI instance with the API key
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    
-    if (!openaiApiKey) {
-      return jsonError("OpenAI API key not configured", 500);
-    }
+    console.log("Received workout request:", input);
 
-    // Use function calling for guaranteed JSON format and include profile data
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.7,
-        messages: [
-          { 
-            role: "system", 
-            content: `You are a certified strength and conditioning coach generating a personalized workout plan. 
-            Consider the following user profile:
-            ${normalizedProfile ? `
-            - Age: ${normalizedProfile.age}
-            - Gender: ${normalizedProfile.gender}
-            - Weight: ${normalizedProfile.weight}kg
-            - Height: ${normalizedProfile.height}cm
-            - Activity Level: ${normalizedProfile.activity_level}
-            - Fitness Level: ${normalizedProfile.fitness_level}` : 'No profile data available'}
-            
-            Adjust the exercise selection, intensity, and progression based on these factors.
-            For older adults (>50), focus on joint-friendly exercises.
-            For beginners, start with basic movement patterns.
-            For advanced users, incorporate progressive overload.
-            Consider gender-specific strength differences and goals.
-            Account for the user's current fitness level based on their activity level.`
-          },
-          { 
-            role: "user", 
-            content: `Generate a workout plan with:
-              - Muscles: ${normalizedInput.muscles.join(", ")}
-              - Style: ${normalizedInput.style}
-              - Goal: ${normalizedInput.goal}
-              - Duration: ${normalizedInput.duration} minutes`
-          }
-        ],
-        functions: [
-          {
-            name: "generate_workout_plan",
-            description: "Generate a structured workout plan based on user parameters",
-            parameters: {
-              type: "object",
-              properties: {
-                exercises: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      sets: { type: "integer", minimum: 1 },
-                      reps: { type: "string" },
-                      weight: { type: "string" }
-                    },
-                    required: ["name", "sets", "reps"]
-                  }
-                }
-              },
-              required: ["exercises"]
-            }
-          }
-        ],
-        function_call: { name: "generate_workout_plan" }
-      }),
+    // ── 2. fetch recent RPE for auto-progression ───────
+    const { data: history } = await supabase
+      .from("exercise_log")
+      .select("exercise_name, avg_rpe:avg(rpe)")
+      .eq("user_id", userId)
+      .order("avg_rpe",{ ascending:false })
+      .limit(30);
+
+    // ── 3. call OpenAI with function-calling ────────────
+    const chat = await openai.chat.completions.create({
+      model:"gpt-4o-mini",
+      temperature:0.7,
+      messages:[
+        { role:"system",
+          content:"You are a certified strength-and-conditioning coach. "
+                + "Use ACSM guidelines and progressive overload." },
+        { role:"user",
+          content:
+            `Profile → age ${age}, gender ${gender}, height ${height}${height_unit}, `
+          + `weight ${weight}${weight_unit}, activity ${activity_level}\n`
+          + `Request → muscles ${muscles.join(",")}, style ${style}, `
+          + `goal ${goal}, duration ${duration}min\n`
+          + `Recent_RPE: ${JSON.stringify(history ?? [])}`
+        }
+      ],
+      functions:[schema],
+      function_call:{ name:"build_workout_plan" }
     });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("OpenAI API error:", response.status, errorData);
-      return jsonError(`OpenAI API error: ${response.status}`, 500);
+    if (!chat.choices[0].message.function_call) {
+      return jsonError("Failed to generate workout plan", 500);
     }
 
-    const completion = await response.json();
+    const plan = JSON.parse(
+      chat.choices[0].message.function_call.arguments
+    );
 
-    // Parse the function call result
-    let parsedPlan;
-    if (completion.choices && 
-        completion.choices[0]?.message?.function_call?.arguments) {
-      parsedPlan = JSON.parse(completion.choices[0].message.function_call.arguments);
-      console.log("Successfully parsed workout plan from function call");
-    } else {
-      console.error("Failed to get workout plan from OpenAI:", completion);
-      return jsonError("Failed to get workout plan from OpenAI", 500);
-    }
-
-    // Store workout session
-    const { data: sessionData, error: insertError } = await supabase
-      .from('workout_session')
+    // ── 4. store workout_session ────────────────────────
+    const { data: inserted, error: insErr } = await supabase
+      .from("workout_session")
       .insert({
         user_id: userId,
-        goal: normalizedInput.goal,
-        style: normalizedInput.style,
-        duration_min: normalizedInput.duration,
-        primary_muscles: normalizedInput.muscles,
-        ai_plan: parsedPlan
+        goal, style, duration_min:duration,
+        primary_muscles: muscles,
+        ai_plan: plan
       })
-      .select()
+      .select("id")
       .single();
-
-    if (insertError) {
-      console.error("Error storing workout session:", insertError);
-      return jsonError(`Failed to store workout session: ${insertError.message}`, 500);
+    
+    if (insErr) {
+      console.error("Error inserting workout session:", insErr);
+      return jsonError(insErr.message, 500);
     }
 
-    return new Response(JSON.stringify({ 
-      sessionId: sessionData.id, 
-      plan: parsedPlan 
-    }), { 
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json"
+    return new Response(
+      JSON.stringify({ sessionId: inserted.id, plan }),
+      { 
+        status: 200, 
+        headers: { 
+          ...corsHeaders,
+          "Content-Type": "application/json" 
+        } 
       }
-    });
+    );
   } catch (err) {
     console.error("Error generating workout plan:", err);
     return jsonError(err.message, 500);
