@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDevBypass } from "@/hooks/useDevBypass";
 import { Loader2 } from "lucide-react";
 
 const profileFormSchema = z.object({
@@ -48,6 +49,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Profile = () => {
   const { user } = useAuth();
+  const devUser = useDevBypass();
+  const actualUser = user || devUser;
+  
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -68,7 +72,7 @@ const Profile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user || user.id === "preview-user") {
+      if (!actualUser) {
         setLoading(false);
         return;
       }
@@ -77,21 +81,16 @@ const Profile = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
-          .single();
+          .eq('id', actualUser.id)
+          .maybeSingle();
 
-        if (error) {
-          if (error.code === 'PGRST116') {
-            // No profile found, which is okay for new users
-            console.log('No profile found, creating a new one');
-          } else {
-            console.error('Error loading profile:', error);
-            toast({
-              title: "Error",
-              description: "Failed to load profile data",
-              variant: "destructive",
-            });
-          }
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading profile:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load profile data",
+            variant: "destructive",
+          });
         }
 
         if (profile) {
@@ -120,10 +119,10 @@ const Profile = () => {
     };
 
     loadProfile();
-  }, [user, form]);
+  }, [actualUser, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!user || user.id === "preview-user") {
+    if (!actualUser) {
       toast({
         title: "Error",
         description: "You must be logged in to update your profile",
@@ -138,7 +137,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          id: actualUser.id,
           username: values.username || null,
           height: values.height ? Number(values.height) : null,
           weight: values.weight ? Number(values.weight) : null,
