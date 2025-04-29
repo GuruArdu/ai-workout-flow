@@ -85,28 +85,36 @@ serve(async (req) => {
       return jsonError("userId missing", 400);
     }
     
-    // Get authentication token from request header
-    const authHeader = req.headers.get('Authorization');
+    // Special handling for dev mode
+    const isDevUser = userId === "0000-preview-user";
     
-    if (!authHeader) {
-      return jsonError("Authentication required", 401);
+    // Only verify authentication for non-dev users
+    if (!isDevUser) {
+      // Get authentication token from request header
+      const authHeader = req.headers.get('Authorization');
+      
+      if (!authHeader) {
+        return jsonError("Authentication required", 401);
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Verify the token and get user info
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return jsonError("Invalid token or user not found", 401);
+      }
+      
+      // Ensure the userId matches the authenticated user
+      if (userId !== user.id) {
+        return jsonError("Unauthorized: User ID mismatch", 403);
+      }
+      
+      console.log("Authenticated user:", userId);
+    } else {
+      console.log("Development mode: Using preview user");
     }
-    
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Verify the token and get user info
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return jsonError("Invalid token or user not found", 401);
-    }
-    
-    // Ensure the userId matches the authenticated user
-    if (userId !== user.id) {
-      return jsonError("Unauthorized: User ID mismatch", 403);
-    }
-    
-    console.log("Authenticated user:", userId);
 
     const {
       muscles, style, duration, goal,    // wizard
