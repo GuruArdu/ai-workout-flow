@@ -9,7 +9,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{error?: Error}>;
   signOut: () => Promise<void>;
   signInWithProvider: (provider: 'google' | 'apple' | 'facebook') => Promise<void>;
   isAuthenticated: boolean;
@@ -35,7 +35,11 @@ export function AuthProvider({
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          navigate('/dashboard');
+          if (session?.user?.email_confirmed_at) {
+            navigate('/dashboard');
+          } else if (session?.user) {
+            navigate('/verify-prompt');
+          }
         } else if (event === 'SIGNED_OUT') {
           navigate('/');
         }
@@ -47,8 +51,10 @@ export function AuthProvider({
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (session) {
+      if (session?.user?.email_confirmed_at) {
         navigate('/dashboard');
+      } else if (session?.user) {
+        navigate('/verify-prompt');
       }
     });
 
@@ -78,18 +84,26 @@ export function AuthProvider({
   const signUp = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Signup failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
       toast({
         title: "Account created!",
         description: "Please check your email to verify your account."
       });
+      return {};
     } catch (error: any) {
       toast({
         title: "Signup failed",
         description: error.message,
         variant: "destructive"
       });
-      throw error;
+      return { error };
     }
   };
 

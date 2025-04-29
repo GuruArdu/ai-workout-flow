@@ -12,6 +12,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
+import VerifyPrompt from "./pages/VerifyPrompt";
+import VerifyHandler from "./pages/VerifyHandler";
 
 // Lazy load heavier pages for performance
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -35,6 +37,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/verify" element={<VerifyHandler />} />
+      <Route path="/verify-prompt" element={<VerifyPrompt />} />
       
       {/* Protected routes wrapped in MainLayout and AuthGate */}
       <Route element={<AuthGate><MainLayout /></AuthGate>}>

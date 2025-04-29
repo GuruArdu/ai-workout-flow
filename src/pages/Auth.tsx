@@ -26,7 +26,12 @@ const Auth = () => {
       if (action === 'signin') {
         await signIn(email, password);
       } else {
-        await signUp(email, password);
+        const { error } = await signUp(email, password);
+        // Always redirect to prompt, even if error is "User already registered"
+        if (!error || error.message.includes("already registered")) {
+          navigate("/verify-prompt");
+          return;
+        }
       }
     } catch (error) {
       console.error("Authentication error:", error);
