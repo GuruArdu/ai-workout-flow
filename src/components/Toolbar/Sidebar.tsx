@@ -3,7 +3,7 @@ import { LayoutDashboard, Play, BarChart, Utensils, User } from "lucide-react";
 import NavLink from "./NavLink";
 
 const Sidebar = () => (
-  <aside className="w-60 bg-white border-r h-screen hidden md:flex flex-col py-6 fixed">
+  <aside className="w-60 bg-white border-r h-screen hidden md:flex flex-col py-6 fixed z-20">
     <div className="px-4 mb-6">
       <h1 className="text-xl font-bold">FitFlow AI</h1>
     </div>

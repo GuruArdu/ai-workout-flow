@@ -9,7 +9,7 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-60 pb-16 md:pb-0 min-h-screen">
+      <main className="md:ml-60 pb-16 md:pb-0 min-h-screen relative z-0">
         <Outlet />
       </main>
       <BottomNav />
