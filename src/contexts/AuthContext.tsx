@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
+import { getVerifyRedirect } from '@/utils/getVerifyRedirect';
 
 type AuthContextType = {
   session: Session | null;
@@ -83,7 +85,14 @@ export function AuthProvider({
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      localStorage.setItem("pending_signup_email", email);
+      
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password, 
+        options: { emailRedirectTo: getVerifyRedirect() } 
+      });
+      
       if (error) {
         toast({
           title: "Signup failed",
@@ -92,6 +101,7 @@ export function AuthProvider({
         });
         return { error };
       }
+      
       toast({
         title: "Account created!",
         description: "Please check your email to verify your account."
