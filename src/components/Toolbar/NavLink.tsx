@@ -3,13 +3,13 @@ import React from "react";
 import { NavLink as RRNavLink } from "react-router-dom";
 import clsx from "clsx";
 
-type Props = {
+type NavLinkProps = {
   to: string;
   icon: React.ReactNode;
   label: string;
 };
 
-const NavLink = ({ to, icon, label }: Props) => (
+const NavLink = ({ to, icon, label }: NavLinkProps) => (
   <RRNavLink
     to={to}
     className={({ isActive }) =>
@@ -18,6 +18,7 @@ const NavLink = ({ to, icon, label }: Props) => (
         isActive ? "text-blue-600" : "text-gray-600 hover:text-blue-500"
       )
     }
+    end
   >
     {icon}
     <span>{label}</span>
