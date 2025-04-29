@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuth } from "@/contexts/AuthContext";
 
 const profileFormSchema = z.object({
   username: z.string().min(3).max(50).optional(),
@@ -46,7 +46,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Profile = () => {
-  const currentUser = useCurrentUser();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,7 +68,7 @@ const Profile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      if (!currentUser) {
+      if (!user) {
         setLoading(false);
         return;
       }
@@ -77,7 +77,7 @@ const Profile = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', currentUser.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
@@ -115,10 +115,10 @@ const Profile = () => {
     };
 
     loadProfile();
-  }, [currentUser, form]);
+  }, [user, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!currentUser) {
+    if (!user) {
       toast({
         title: "Error",
         description: "You must be logged in to update your profile",
@@ -133,7 +133,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: currentUser.id,
+          id: user.id,
           username: values.username || null,
           height: values.height ? Number(values.height) : null,
           weight: values.weight ? Number(values.weight) : null,
