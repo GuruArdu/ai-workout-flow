@@ -92,9 +92,9 @@ const Profile = () => {
         // For dev user, first check if a profile already exists
         if (devUser) {
           const { data: existingProfile } = await supabase
-            .from('profiles')
+            .from('profile')
             .select('*')
-            .eq('id', devUser.id)
+            .eq('user_id', devUser.id)
             .single();
             
           if (existingProfile) {
@@ -159,9 +159,9 @@ const Profile = () => {
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('profile')
         .upsert({
-          id: userId,
+          user_id: userId,
           username: values.username || null,
           height: values.height ? Number(values.height) : null,
           weight: values.weight ? Number(values.weight) : null,
