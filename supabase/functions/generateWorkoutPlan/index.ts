@@ -2,7 +2,7 @@
 // deno: edge runtime
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { OpenAI } from "https://deno.land/x/openai@4.7.0/mod.ts";
+import { OpenAI } from "https://esm.sh/openai@4.11.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
