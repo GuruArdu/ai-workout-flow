@@ -14,9 +14,6 @@ const MainLayout = () => {
     setDevMode(isDevMode);
   }, []);
 
-  // Only show dev tools in development environment
-  const isDevelopment = import.meta.env.DEV;
-
   const toggleDevMode = () => {
     const newMode = !devMode;
     localStorage.setItem('devModeEnabled', newMode.toString());
@@ -39,20 +36,18 @@ const MainLayout = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-60 pb-16 md:pb-0 min-h-screen relative z-0">
-        {isDevelopment && (
-          <div className="fixed top-2 right-2 z-50">
-            <button
-              onClick={toggleDevMode}
-              className={`px-3 py-1 text-xs font-medium rounded-full ${
-                devMode 
-                  ? "bg-green-500 text-white" 
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {devMode ? "Dev Mode: ON" : "Dev Mode: OFF"}
-            </button>
-          </div>
-        )}
+        <div className="fixed top-2 right-2 z-50">
+          <button
+            onClick={toggleDevMode}
+            className={`px-4 py-2 text-sm font-medium rounded-lg shadow-md border transition-all ${
+              devMode 
+                ? "bg-green-500 text-white border-green-600 hover:bg-green-600" 
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            {devMode ? "Dev Mode: ON" : "Dev Mode: OFF"}
+          </button>
+        </div>
         <Outlet />
       </main>
       <BottomNav />
