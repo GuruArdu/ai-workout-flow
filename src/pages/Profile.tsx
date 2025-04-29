@@ -46,7 +46,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, loadUserProfile } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,21 +74,8 @@ const Profile = () => {
       }
       
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error loading profile:', error);
-          toast({
-            title: "Error",
-            description: "Failed to load profile data",
-            variant: "destructive",
-          });
-        }
-
+        const profile = await loadUserProfile(user.id);
+        
         if (profile) {
           form.reset({
             username: profile.username || "",
@@ -115,7 +102,7 @@ const Profile = () => {
     };
 
     loadProfile();
-  }, [user, form]);
+  }, [user, form, loadUserProfile]);
 
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) {

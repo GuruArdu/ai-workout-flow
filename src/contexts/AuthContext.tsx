@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   signInWithProvider: (provider: 'google' | 'apple' | 'facebook') => Promise<void>;
   isAuthenticated: boolean;
+  loadUserProfile: (userId: string) => Promise<any>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,6 +148,52 @@ export function AuthProvider({
     }
   };
 
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: row, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      // If no profile exists yet, create one
+      if (!row || error?.code === 'PGRST116') {
+        const { data: inserted, error: insertError } = await supabase
+          .from("profiles")
+          .insert({ id: userId })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          toast({
+            title: "Error",
+            description: "Failed to create profile",
+            variant: "destructive"
+          });
+          return null;
+        }
+        
+        return inserted;
+      }
+      
+      return row;
+    } catch (error) {
+      console.error("Error in loadUserProfile:", error);
+      return null;
+    }
+  };
+
   const contextValue = {
     session,
     user,
@@ -156,7 +202,8 @@ export function AuthProvider({
     signUp,
     signOut,
     signInWithProvider,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    loadUserProfile
   };
 
   return (
