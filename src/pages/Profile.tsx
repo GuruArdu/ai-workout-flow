@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDevUser } from "@/hooks/useDevUser";
@@ -95,7 +95,7 @@ const Profile = () => {
             .from('profile')
             .select('*')
             .eq('user_id', devUser.id)
-            .single();
+            .maybeSingle();
             
           if (existingProfile) {
             form.reset({
@@ -112,6 +112,11 @@ const Profile = () => {
             setLoading(false);
             return;
           }
+          
+          // If no row, insert one for the dev user so upsert doesn't break
+          await supabase.from("profile").insert({ user_id: devUser.id });
+          setLoading(false);
+          return;
         } else {
           // Normal user flow with auth context
           const profile = await loadUserProfile(userId);
