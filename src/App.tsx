@@ -68,6 +68,8 @@ const AppRoutes = () => {
             <Profile />
           </Suspense>
         } />
+        {/* Fallback route for protected area */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
       
       {/* Catch-all route */}
