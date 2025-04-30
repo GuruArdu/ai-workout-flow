@@ -53,8 +53,9 @@ const StartWorkout = () => {
       });
 
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('profile')
         .select('*')
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (profileError) {

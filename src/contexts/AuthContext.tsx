@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { getVerifyRedirect } from '@/utils/getVerifyRedirect';
+import { UserProfile } from '@/types/profile';
 
 type AuthContextType = {
   session: Session | null;
@@ -14,7 +15,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   signInWithProvider: (provider: 'google' | 'apple' | 'facebook') => Promise<void>;
   isAuthenticated: boolean;
-  loadUserProfile: (userId: string) => Promise<any>;
+  loadUserProfile: (userId: string) => Promise<UserProfile | null>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,7 +149,7 @@ export function AuthProvider({
     }
   };
 
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       const { data: row, error } = await supabase
         .from("profile")

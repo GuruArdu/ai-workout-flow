@@ -47,6 +47,54 @@ export type Database = {
           },
         ]
       }
+      profile: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          fitness_level: string | null
+          gender: string | null
+          goal: string | null
+          height: number | null
+          height_unit: string | null
+          inserted_at: string | null
+          updated_at: string | null
+          user_id: string
+          username: string | null
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          fitness_level?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          height_unit?: string | null
+          inserted_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          username?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          fitness_level?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          height_unit?: string | null
+          inserted_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activity_level: string | null
@@ -127,7 +175,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      dev_or_owner: {
+        Args: { uid: string; row_uid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
