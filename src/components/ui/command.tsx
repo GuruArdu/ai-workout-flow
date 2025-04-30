@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
@@ -6,11 +7,11 @@ import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-// Fix issue with null values in Command component
+// Fix issue with null values in Command component by ensuring children prop is never null
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <CommandPrimitive
     ref={ref}
     className={cn(
@@ -19,7 +20,7 @@ const Command = React.forwardRef<
     )}
     // Ensure children is always defined before it gets processed by cmdk
     {...props}
-    children={props.children || null}
+    children={children || null}
   />
 ))
 Command.displayName = CommandPrimitive.displayName
@@ -114,14 +115,14 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & { onSelect?: (value: string) => void }
->(({ className, ...props }, ref) => (
+>(({ className, onSelect, ...props }, ref) => (
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
       "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
       className
     )}
-    // Ensure we have valid values for onSelect
+    onSelect={onSelect as any}
     {...props}
   />
 ))
