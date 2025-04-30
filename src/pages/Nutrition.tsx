@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { Mic, Plus, Loader2 } from "lucide-react";
+import { Mic, Plus, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { NutritionSummary } from "@/components/nutrition/NutritionSummary";
@@ -64,7 +65,15 @@ const Nutrition = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(true);
   const { user } = useAuth();
+  
+  // Check if Speech Recognition is supported
+  useEffect(() => {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      setIsSpeechSupported(false);
+    }
+  }, []);
   
   // Fetch nutrition data
   const { data: nutritionData, isLoading: isLoadingNutrition, refetch: refetchNutrition } = useQuery({
@@ -114,6 +123,16 @@ const Nutrition = () => {
   }, {} as Record<string, FoodLog[]>) : {};
   
   const handleVoiceInput = async () => {
+    // Check if Speech Recognition is supported
+    if (!isSpeechSupported) {
+      toast({
+        title: "Speech Recognition Not Supported",
+        description: "Your browser doesn't support speech recognition. Please try using a different browser, like Chrome.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       if (isListening) {
         setIsListening(false);
@@ -136,14 +155,17 @@ const Nutrition = () => {
         setIsProcessingVoice(true);
         
         try {
-          // For browser-based speech recognition
+          // Safely access Speech Recognition API
           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+            throw new Error("Speech Recognition not supported");
+          }
+          
           const recognition = new SpeechRecognition();
           recognition.lang = 'en-US';
           
           // Create audio URL for potential playback
           const audioBlob = new Blob(audioChunks);
-          const audioUrl = URL.createObjectURL(audioBlob);
           
           recognition.onresult = async (event) => {
             const transcript = event.results[0][0].transcript;
@@ -193,7 +215,7 @@ const Nutrition = () => {
           console.error("Error processing audio:", error);
           toast({
             title: "Error",
-            description: "Failed to process audio. Please try again.",
+            description: "Failed to process audio. Please try again or use manual entry.",
             variant: "destructive"
           });
           setIsProcessingVoice(false);
@@ -270,19 +292,29 @@ const Nutrition = () => {
       
       {/* Action Buttons */}
       <div className="fixed bottom-20 md:bottom-8 right-8 flex flex-col gap-2">
-        <Button 
-          size="lg" 
-          className="rounded-full w-14 h-14 p-0 shadow-lg"
-          variant={isListening ? "destructive" : (isProcessingVoice ? "outline" : "default")}
-          onClick={handleVoiceInput}
-          disabled={isProcessingVoice}
-        >
-          {isProcessingVoice ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : (
-            <Mic className="h-6 w-6" />
-          )}
-        </Button>
+        {!isSpeechSupported ? (
+          <div className="bg-amber-50 text-amber-800 p-2 rounded-lg text-sm max-w-xs border border-amber-200 mb-2">
+            <div className="flex items-center gap-1 mb-1">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">Voice input not supported</span>
+            </div>
+            <p>Your browser doesn't support speech recognition.</p>
+          </div>
+        ) : (
+          <Button 
+            size="lg" 
+            className="rounded-full w-14 h-14 p-0 shadow-lg"
+            variant={isListening ? "destructive" : (isProcessingVoice ? "outline" : "default")}
+            onClick={handleVoiceInput}
+            disabled={isProcessingVoice || !isSpeechSupported}
+          >
+            {isProcessingVoice ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <Mic className="h-6 w-6" />
+            )}
+          </Button>
+        )}
         
         <Button 
           size="lg" 
