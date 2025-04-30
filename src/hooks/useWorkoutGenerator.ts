@@ -48,7 +48,7 @@ export const useWorkoutGenerator = (userId: string | null) => {
 
       console.log("Sending workout request with data:", { userId: effectiveUserId, ...workoutData, ...profile });
 
-      const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
+      const { data, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
         'generateWorkoutPlan',
         {
           method: "POST",
@@ -71,9 +71,9 @@ export const useWorkoutGenerator = (userId: string | null) => {
         throw new Error(`Failed to generate workout plan: ${error.message}`);
       }
 
-      console.log("Workout generated:", payload);
+      console.log("Workout generated:", data);
 
-      if (!payload?.sessionId) {
+      if (!data?.sessionId) {
         throw new Error("No session ID returned from API");
       }
 
@@ -82,7 +82,7 @@ export const useWorkoutGenerator = (userId: string | null) => {
         description: "Your personalized workout plan is ready.",
       });
 
-      navigate(`/workout/${payload.sessionId}`);
+      navigate(`/workout/${data.sessionId}`);
     } catch (error: any) {
       console.error("Error generating workout:", error);
       toast({
