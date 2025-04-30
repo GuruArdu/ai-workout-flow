@@ -185,10 +185,10 @@ export function AuthProvider({
           return null;
         }
         
-        return inserted;
+        return inserted as UserProfile;
       }
       
-      return row;
+      return row as UserProfile;
     } catch (error) {
       console.error("Error in loadUserProfile:", error);
       return null;

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase"; // Using consistent import
+import { supabase } from "@/lib/supabase";
 import { UserProfile, HeightUnit, WeightUnit } from "@/types/profile";
 import { toast } from "@/components/ui/use-toast";
 
@@ -42,6 +42,21 @@ export const useProfileData = (userId: string | null, isDevUser: boolean = false
           await supabase.from("profile").insert({ 
             user_id: userId 
           });
+          
+          // Fetch the newly created profile
+          const { data: newProfile } = await supabase
+            .from('profile')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+            
+          if (newProfile) {
+            setProfile({
+              ...newProfile,
+              height_unit: (newProfile.height_unit || "cm") as HeightUnit,
+              weight_unit: (newProfile.weight_unit || "kg") as WeightUnit,
+            });
+          }
           setLoading(false);
           return;
         } else {
@@ -66,6 +81,26 @@ export const useProfileData = (userId: string | null, isDevUser: boolean = false
               height_unit,
               weight_unit,
             });
+          } else {
+            // No profile exists, create one
+            await supabase.from("profile").insert({ 
+              user_id: userId 
+            });
+            
+            // Fetch the newly created profile
+            const { data: newProfile } = await supabase
+              .from('profile')
+              .select('*')
+              .eq('user_id', userId)
+              .single();
+              
+            if (newProfile) {
+              setProfile({
+                ...newProfile,
+                height_unit: (newProfile.height_unit || "cm") as HeightUnit,
+                weight_unit: (newProfile.weight_unit || "kg") as WeightUnit,
+              });
+            }
           }
         }
       } catch (error) {

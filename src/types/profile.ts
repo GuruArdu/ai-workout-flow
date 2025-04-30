@@ -14,6 +14,5 @@ export interface UserProfile {
   fitness_level: string | null;
   activity_level: string | null;
   goal: string | null;
-  inserted_at: string | null;
   updated_at: string | null;
 }
