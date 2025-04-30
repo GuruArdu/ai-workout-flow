@@ -234,7 +234,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_weekly_volume: {
+        Row: {
+          user_id: string | null
+          volume: number | null
+          wk: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       dev_or_owner: {
