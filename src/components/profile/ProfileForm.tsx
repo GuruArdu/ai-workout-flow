@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 import { UserProfile, HeightUnit, WeightUnit } from "@/types/profile";
+import { useProfile } from "@/hooks/useProfile";
 
 const profileFormSchema = z.object({
   username: z.string().min(3).max(50).optional(),
@@ -46,13 +46,13 @@ const profileFormSchema = z.object({
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 interface ProfileFormProps {
-  userId: string;
   initialData?: Partial<UserProfile>;
   isDev?: boolean;
 }
 
-const ProfileForm = ({ userId, initialData, isDev = false }: ProfileFormProps) => {
+const ProfileForm = ({ initialData, isDev = false }: ProfileFormProps) => {
   const [isSaving, setIsSaving] = useState(false);
+  const { userId, saveProfile } = useProfile();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -82,38 +82,19 @@ const ProfileForm = ({ userId, initialData, isDev = false }: ProfileFormProps) =
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('profile')
-        .upsert({
-          user_id: userId,
-          username: values.username || null,
-          height: values.height ? Number(values.height) : null,
-          weight: values.weight ? Number(values.weight) : null,
-          age: values.age ? Number(values.age) : null,
-          fitness_level: values.fitness_level || null,
-          activity_level: values.activity_level || null,
-          gender: values.gender || null,
-          height_unit: values.height_unit,
-          weight_unit: values.weight_unit,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error('Error updating profile:', error);
-        throw error;
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+      await saveProfile({
+        username: values.username || null,
+        height: values.height ? Number(values.height) : null,
+        weight: values.weight ? Number(values.weight) : null,
+        age: values.age ? Number(values.age) : null,
+        fitness_level: values.fitness_level || null,
+        activity_level: values.activity_level || null,
+        gender: values.gender || null,
+        height_unit: values.height_unit,
+        weight_unit: values.weight_unit,
       });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      });
     } finally {
       setIsSaving(false);
     }

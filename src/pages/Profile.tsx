@@ -1,22 +1,42 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDevUser } from "@/hooks/useDevUser";
 import { useNavigate } from "react-router-dom";
 import ProfileForm from "@/components/profile/ProfileForm";
-import { useProfileData } from "@/hooks/useProfileData";
+import { useProfile } from "@/hooks/useProfile";
+import { UserProfile } from "@/types/profile";
 
 const Profile = () => {
   const { user } = useAuth();
   const devUser = useDevUser();
   const navigate = useNavigate();
+  const { userId, getProfile } = useProfile();
   
-  // Get either authenticated user or dev user ID
-  const userId = user?.id ?? devUser?.id ?? null;
-  
-  const { profile, loading } = useProfileData(userId, !!devUser);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Partial<UserProfile> | null>(null);
+
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (userId) {
+        try {
+          const data = await getProfile();
+          setProfile(data);
+        } catch (error) {
+          console.error("Error loading profile:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    loadProfile();
+  }, [userId, getProfile]);
 
   // Redirect if no user (real or dev)
   useEffect(() => {
@@ -41,7 +61,6 @@ const Profile = () => {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <ProfileForm 
-        userId={userId} 
         initialData={profile || undefined}
         isDev={!!devUser}
       />
