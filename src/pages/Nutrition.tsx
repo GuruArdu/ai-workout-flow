@@ -11,6 +11,14 @@ import { MealList } from "@/components/nutrition/MealList";
 import { AddFoodModal } from "@/components/nutrition/AddFoodModal";
 import { useQuery } from "@tanstack/react-query";
 
+// Add TypeScript declaration for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 export interface NutritionData {
   dailyTotals: {
     date: string;
@@ -129,7 +137,8 @@ const Nutrition = () => {
         
         try {
           // For browser-based speech recognition
-          const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const recognition = new SpeechRecognition();
           recognition.lang = 'en-US';
           
           // Create audio URL for potential playback
