@@ -22,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 interface Food {
@@ -167,7 +167,7 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
                       <>
                         <CommandEmpty>No results found</CommandEmpty>
                         <CommandGroup>
-                          {foodItems?.map((food) => (
+                          {(foodItems || []).map((food) => (
                             <CommandItem 
                               key={food.id}
                               value={food.name}
@@ -224,25 +224,25 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
                 <div>
                   <span className="block text-gray-500">Calories</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.kcal * parseFloat(grams)) / 100)} kcal
+                    {Math.round((selectedFood.kcal * parseFloat(grams || "0")) / 100)} kcal
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Protein</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.protein * parseFloat(grams)) / 100)}g
+                    {Math.round((selectedFood.protein * parseFloat(grams || "0")) / 100)}g
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Carbs</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.carbs * parseFloat(grams)) / 100)}g
+                    {Math.round((selectedFood.carbs * parseFloat(grams || "0")) / 100)}g
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Fat</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.fat * parseFloat(grams)) / 100)}g
+                    {Math.round((selectedFood.fat * parseFloat(grams || "0")) / 100)}g
                   </span>
                 </div>
               </div>
