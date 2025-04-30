@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { GenerateWorkoutPlanResponse } from "@/types/edge-functions";
 import { useNavigate } from "react-router-dom";
+import { useDevUser } from "@/hooks/useDevUser";
 
 type WorkoutData = {
   muscles: string[];
@@ -15,9 +16,11 @@ type WorkoutData = {
 export const useWorkoutGenerator = (userId: string | null) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
+  const devUser = useDevUser();
+  const effectiveUserId = userId ?? devUser?.id ?? null;
 
   const generateWorkout = async (workoutData: WorkoutData) => {
-    if (!userId) {
+    if (!effectiveUserId) {
       navigate("/auth");
       return;
     }
@@ -32,7 +35,7 @@ export const useWorkoutGenerator = (userId: string | null) => {
       const { data: profile, error: profileError } = await supabase
         .from('profile')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', effectiveUserId)
         .maybeSingle();
 
       if (profileError) {
@@ -43,14 +46,14 @@ export const useWorkoutGenerator = (userId: string | null) => {
         throw new Error("Profile not found. Please complete your profile first.");
       }
 
-      console.log("Sending workout request with data:", { userId, ...workoutData, ...profile });
+      console.log("Sending workout request with data:", { userId: effectiveUserId, ...workoutData, ...profile });
 
       const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
         'generateWorkoutPlan',
         {
           method: "POST",
           body: {
-            userId,
+            userId: effectiveUserId,
             ...workoutData,
             age: profile.age,
             gender: profile.gender,

@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { usePlanGenerator } from "@/hooks/usePlanGenerator";
+import { useDevUser } from "@/hooks/useDevUser";
 
 interface GeneratePlanButtonProps {
   userId: string | null;
@@ -16,7 +17,9 @@ interface GeneratePlanButtonProps {
 }
 
 const GeneratePlanButton = ({ userId, variant = "default" }: GeneratePlanButtonProps) => {
-  const { generatePlan, isGenerating } = usePlanGenerator(userId);
+  const devUser = useDevUser();
+  const effectiveUserId = userId ?? devUser?.id ?? null;
+  const { generatePlan, isGenerating } = usePlanGenerator(effectiveUserId);
   
   const handleGeneratePlan = async (period: "week" | "month") => {
     await generatePlan(period);

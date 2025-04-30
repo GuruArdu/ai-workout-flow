@@ -82,7 +82,7 @@ serve(async (req) => {
     // Extract userId from request body
     const { userId, ...payload } = input;
     if (!userId) {
-      return jsonError("userId missing", 400);
+      return jsonError("userId required", 400);
     }
     
     // Special handling for dev mode

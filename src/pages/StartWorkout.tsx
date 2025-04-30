@@ -34,7 +34,7 @@ const StartWorkout = () => {
   });
 
   // Use either authenticated user or dev user
-  const userId = session?.user.id || (devUser?.id || null);
+  const userId = session?.user?.id ?? devUser?.id ?? null;
   const { generateWorkout, isGenerating } = useWorkoutGenerator(userId);
   
   if (!userId) {
