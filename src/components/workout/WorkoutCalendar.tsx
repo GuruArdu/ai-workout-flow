@@ -70,6 +70,7 @@ const WorkoutCalendar = ({ sessions }: WorkoutCalendarProps) => {
           className="rounded-md border"
           components={{
             DayContent: (props) => {
+              // Fix: Access the date directly from props
               const dateString = format(props.date, "yyyy-MM-dd");
               const dayWorkouts = sessionsByDate[dateString] || [];
               
