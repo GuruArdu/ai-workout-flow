@@ -14,8 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 // Add TypeScript declaration for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
   }
 }
 
@@ -109,8 +109,9 @@ const Nutrition = () => {
         .eq('date', today);
         
       if (error) throw new Error(error.message);
-      // Cast the data to the correct type
-      return data as unknown as FoodLog[];
+      
+      // Explicitly cast the data to ensure proper type conversion
+      return (data || []) as unknown as FoodLog[];
     },
     enabled: !!user?.id
   });
