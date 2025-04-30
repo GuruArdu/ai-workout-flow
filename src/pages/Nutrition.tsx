@@ -13,16 +13,12 @@ import { useQuery } from "@tanstack/react-query";
 // Add TypeScript declaration for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognitionAPI;
-    webkitSpeechRecognition: typeof SpeechRecognitionAPI;
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
   }
 }
 
 // Define the SpeechRecognition interface since TypeScript doesn't include it by default
-interface SpeechRecognitionAPI {
-  new (): SpeechRecognitionInstance;
-}
-
 interface SpeechRecognitionInstance {
   lang: string;
   continuous: boolean;
