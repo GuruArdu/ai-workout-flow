@@ -89,19 +89,20 @@ const Tracker = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       
+      // Fixed: Removed the .distinct() call and using the proper approach
       const { data, error } = await supabase
         .from("exercise_log")
-        .select("exercise_name")
-        .eq("user_id", user.id)
-        .order("exercise_name")
-        .distinct();
+        .select('exercise_name', { count: 'exact', head: false })
+        .eq("user_id", user.id);
       
       if (error) {
         console.error("Error fetching exercise names:", error);
         throw error;
       }
       
-      return data?.map(item => item.exercise_name) || [];
+      // Get unique exercise names
+      const uniqueNames = [...new Set(data?.map(item => item.exercise_name))];
+      return uniqueNames.sort() || [];
     },
     enabled: !!user?.id && activeTab === "records",
   });
