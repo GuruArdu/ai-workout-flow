@@ -64,7 +64,7 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
         .limit(20);
 
       if (error) throw error;
-      return data as Food[];
+      return (data || []) as Food[];
     },
     enabled: isOpen && searchTerm.length >= 2,
   });
@@ -86,7 +86,7 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
 
     setIsSubmitting(true);
     try {
-      const parsedGrams = parseFloat(grams);
+      const parsedGrams = parseFloat(grams || "0");
       if (isNaN(parsedGrams) || parsedGrams <= 0) {
         throw new Error("Please enter a valid amount");
       }
@@ -137,6 +137,13 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
     onClose();
   };
 
+  // Safe accessor functions to prevent null errors
+  const getFoodItems = () => foodItems || [];
+  const getGramsValue = () => {
+    const value = parseFloat(grams || "0");
+    return isNaN(value) ? 0 : value;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -151,42 +158,44 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
           <div className="grid gap-2">
             <Label htmlFor="food">Food</Label>
             <div className="relative">
-              <Command className="rounded-lg border shadow-md">
-                <CommandInput 
-                  placeholder="Search foods..." 
-                  value={searchTerm}
-                  onValueChange={handleSearch}
-                />
-                {searchTerm.length >= 2 && (
-                  <CommandList>
-                    {isFoodLoading ? (
-                      <div className="flex items-center justify-center p-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
-                    ) : (
-                      <>
-                        <CommandEmpty>No results found</CommandEmpty>
-                        <CommandGroup>
-                          {(foodItems || []).map((food) => (
-                            <CommandItem 
-                              key={food.id}
-                              value={food.name}
-                              onSelect={() => handleSelectFood(food)}
-                            >
-                              <div className="flex flex-col">
-                                <span>{food.name}</span>
-                                <span className="text-xs text-gray-500">
-                                  {food.kcal} kcal | P: {food.protein}g | C: {food.carbs}g | F: {food.fat}g
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </>
-                    )}
-                  </CommandList>
-                )}
-              </Command>
+              {isOpen && (
+                <Command className="rounded-lg border shadow-md">
+                  <CommandInput 
+                    placeholder="Search foods..." 
+                    value={searchTerm}
+                    onValueChange={handleSearch}
+                  />
+                  {searchTerm.length >= 2 && (
+                    <CommandList>
+                      {isFoodLoading ? (
+                        <div className="flex items-center justify-center p-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      ) : (
+                        <>
+                          <CommandEmpty>No results found</CommandEmpty>
+                          <CommandGroup>
+                            {getFoodItems().map((food) => (
+                              <CommandItem 
+                                key={food.id}
+                                value={food.name}
+                                onSelect={() => handleSelectFood(food)}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{food.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {food.kcal} kcal | P: {food.protein}g | C: {food.carbs}g | F: {food.fat}g
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  )}
+                </Command>
+              )}
             </div>
           </div>
 
@@ -224,25 +233,25 @@ export const AddFoodModal = ({ isOpen, onClose, onFoodAdded }: AddFoodModalProps
                 <div>
                   <span className="block text-gray-500">Calories</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.kcal * parseFloat(grams || "0")) / 100)} kcal
+                    {Math.round((selectedFood.kcal * getGramsValue()) / 100)} kcal
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Protein</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.protein * parseFloat(grams || "0")) / 100)}g
+                    {Math.round((selectedFood.protein * getGramsValue()) / 100)}g
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Carbs</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.carbs * parseFloat(grams || "0")) / 100)}g
+                    {Math.round((selectedFood.carbs * getGramsValue()) / 100)}g
                   </span>
                 </div>
                 <div>
                   <span className="block text-gray-500">Fat</span>
                   <span className="font-medium">
-                    {Math.round((selectedFood.fat * parseFloat(grams || "0")) / 100)}g
+                    {Math.round((selectedFood.fat * getGramsValue()) / 100)}g
                   </span>
                 </div>
               </div>

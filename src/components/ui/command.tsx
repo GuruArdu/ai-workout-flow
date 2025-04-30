@@ -7,6 +7,7 @@ import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
+// Fix issue with null values in Command component
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
@@ -111,7 +112,7 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & { onSelect?: (value: string) => void }
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Item
     ref={ref}
