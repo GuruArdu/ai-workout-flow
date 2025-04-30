@@ -14,7 +14,7 @@ const Profile = () => {
   const navigate = useNavigate();
   
   // Get either authenticated user or dev user ID
-  const userId = user?.id || (devUser?.id || null);
+  const userId = user?.id ?? devUser?.id ?? null;
   
   const { profile, loading } = useProfileData(userId, !!devUser);
 
