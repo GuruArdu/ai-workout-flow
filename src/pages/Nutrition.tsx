@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,7 +100,8 @@ const Nutrition = () => {
         .eq('date', today);
         
       if (error) throw new Error(error.message);
-      return data as FoodLog[];
+      // Cast the data to the correct type
+      return data as unknown as FoodLog[];
     },
     enabled: !!user?.id
   });
