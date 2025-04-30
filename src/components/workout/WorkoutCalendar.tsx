@@ -41,50 +41,6 @@ const WorkoutCalendar = ({ sessions }: WorkoutCalendarProps) => {
   // Default color for goals not in the predefined list
   const defaultColor = "bg-gray-500";
   
-  // Handle day render to show workouts
-  const renderDay = (day: Date) => {
-    const dateString = format(day, "yyyy-MM-dd");
-    const dayWorkouts = sessionsByDate[dateString] || [];
-    
-    if (dayWorkouts.length === 0) {
-      return <div className="h-8 w-8 p-0" />;
-    }
-    
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="relative h-8 w-8 p-0">
-              <div className="absolute top-0 right-0 flex flex-wrap gap-1 justify-end">
-                {dayWorkouts.map((workout, idx) => (
-                  <span 
-                    key={idx}
-                    className={`h-2 w-2 rounded-full ${workout.goal && goalColors[workout.goal] ? goalColors[workout.goal] : defaultColor} ${workout.planned ? 'ring-1 ring-white' : ''}`} 
-                  />
-                ))}
-              </div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="space-y-1">
-              {dayWorkouts.map((workout, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span 
-                    className={`h-3 w-3 rounded-full ${workout.goal && goalColors[workout.goal] ? goalColors[workout.goal] : defaultColor} ${workout.planned ? 'ring-1 ring-white' : ''}`} 
-                  />
-                  <span className="font-medium">
-                    {workout.planned ? '(Planned) ' : ''}
-                    {workout.style}: {workout.primary_muscles.join(', ')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-  
   // Handle day click to navigate to workout detail
   const handleDayClick = (day: Date | undefined) => {
     if (!day) return;
@@ -113,12 +69,49 @@ const WorkoutCalendar = ({ sessions }: WorkoutCalendarProps) => {
           onSelect={handleDayClick}
           className="rounded-md border"
           components={{
-            Day: ({ day, ...props }) => (
-              <button {...props} className={props.className}>
-                {format(day, "d")}
-                {renderDay(day)}
-              </button>
-            ),
+            DayContent: (props) => {
+              const dateString = format(props.date, "yyyy-MM-dd");
+              const dayWorkouts = sessionsByDate[dateString] || [];
+              
+              return (
+                <>
+                  {format(props.date, "d")}
+                  {dayWorkouts.length > 0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="relative h-8 w-8 p-0">
+                            <div className="absolute top-0 right-0 flex flex-wrap gap-1 justify-end">
+                              {dayWorkouts.map((workout, idx) => (
+                                <span 
+                                  key={idx}
+                                  className={`h-2 w-2 rounded-full ${workout.goal && goalColors[workout.goal] ? goalColors[workout.goal] : defaultColor} ${workout.planned ? 'ring-1 ring-white' : ''}`} 
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="space-y-1">
+                            {dayWorkouts.map((workout, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span 
+                                  className={`h-3 w-3 rounded-full ${workout.goal && goalColors[workout.goal] ? goalColors[workout.goal] : defaultColor} ${workout.planned ? 'ring-1 ring-white' : ''}`} 
+                                />
+                                <span className="font-medium">
+                                  {workout.planned ? '(Planned) ' : ''}
+                                  {workout.style}: {workout.primary_muscles.join(', ')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </>
+              );
+            },
           }}
         />
         
