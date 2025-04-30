@@ -5,6 +5,7 @@ export interface WorkoutSession {
   goal: string;
   style: string;
   primary_muscles: string[];
+  planned?: boolean;
 }
 
 export interface WeeklyVolumeData {
@@ -26,4 +27,18 @@ export interface OneRepMaxData {
   displayDate: string;
   oneRepMax: number;
   bestSet: string;
+}
+
+export interface PeriodPlanData {
+  workouts: WorkoutPlan[];
+}
+
+export interface WorkoutPlan extends WorkoutSession {
+  duration_min: number;
+  exercises: {
+    name: string;
+    sets: number;
+    reps: string;
+    weight?: string;
+  }[];
 }

@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart";
 import { Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Bar, BarChart } from "recharts";
+import GeneratePlanButton from "@/components/GeneratePlanButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -123,10 +124,13 @@ const Dashboard = () => {
             {user?.email ? `Logged in as ${user.email}` : 'Your personalized workout companion'}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+        <div className="flex gap-2">
+          <GeneratePlanButton userId={user?.id || null} variant="outline" />
+          <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </header>
       
       <div className="grid md:grid-cols-2 gap-6 mb-8">
