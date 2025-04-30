@@ -21,6 +21,7 @@ const StartWorkout = lazy(() => import("./pages/StartWorkout"));
 const WorkoutDetail = lazy(() => import("./pages/WorkoutDetail"));
 const Tracker = lazy(() => import("./pages/Tracker"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Nutrition = lazy(() => import("./pages/Nutrition"));
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,11 @@ const AppRoutes = () => {
         <Route path="/tracker" element={
           <Suspense fallback={<LoadingFallback />}>
             <Tracker />
+          </Suspense>
+        } />
+        <Route path="/nutrition" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Nutrition />
           </Suspense>
         } />
         <Route path="/profile" element={

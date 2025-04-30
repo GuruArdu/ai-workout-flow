@@ -47,6 +47,68 @@ export type Database = {
           },
         ]
       }
+      food: {
+        Row: {
+          carbs: number
+          fat: number
+          id: number
+          kcal: number
+          name: string
+          protein: number
+        }
+        Insert: {
+          carbs: number
+          fat: number
+          id?: number
+          kcal: number
+          name: string
+          protein: number
+        }
+        Update: {
+          carbs?: number
+          fat?: number
+          id?: number
+          kcal?: number
+          name?: string
+          protein?: number
+        }
+        Relationships: []
+      }
+      food_log: {
+        Row: {
+          date: string
+          food_id: number
+          grams: number
+          id: string
+          meal: string
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          food_id: number
+          grams?: number
+          id?: string
+          meal: string
+          user_id: string
+        }
+        Update: {
+          date?: string
+          food_id?: number
+          grams?: number
+          id?: string
+          meal?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_log_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "food"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile: {
         Row: {
           activity_level: string | null
