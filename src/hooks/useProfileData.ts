@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase"; // Using consistent import
 import { UserProfile, HeightUnit, WeightUnit } from "@/types/profile";
 import { toast } from "@/components/ui/use-toast";
 
@@ -38,8 +38,10 @@ export const useProfileData = (userId: string | null, isDevUser: boolean = false
             return;
           }
           
-          // If no row, insert one for the dev user so upsert doesn't break
-          await supabase.from("profile").insert({ user_id: userId });
+          // If no row, insert one for the dev user with a valid UUID format
+          await supabase.from("profile").insert({ 
+            user_id: userId 
+          });
           setLoading(false);
           return;
         } else {

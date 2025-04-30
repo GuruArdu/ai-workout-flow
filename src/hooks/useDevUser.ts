@@ -5,5 +5,6 @@ export const useDevUser = () => {
     import.meta.env.DEV ||
     location.hostname.endsWith(".lovable.app");
   if (!dev) return null;
-  return { id: "dev-user", email: "dev@local" } as const;
+  // Using a valid UUID format for development user
+  return { id: "00000000-0000-0000-0000-000000000000", email: "dev@local" } as const;
 };
