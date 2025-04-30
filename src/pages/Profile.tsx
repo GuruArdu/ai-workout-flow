@@ -27,6 +27,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDevUser } from "@/hooks/useDevUser";
 import { useNavigate } from "react-router-dom";
+import { HeightUnit, WeightUnit } from "@/types/profile";
 
 const profileFormSchema = z.object({
   username: z.string().min(3).max(50).optional(),
@@ -98,6 +99,10 @@ const Profile = () => {
             .maybeSingle();
             
           if (existingProfile) {
+            // Use type assertion to ensure height_unit and weight_unit are valid
+            const height_unit = (existingProfile.height_unit || "cm") as HeightUnit;
+            const weight_unit = (existingProfile.weight_unit || "kg") as WeightUnit;
+            
             form.reset({
               username: existingProfile.username || "",
               height: existingProfile.height?.toString() || "",
@@ -106,8 +111,8 @@ const Profile = () => {
               fitness_level: existingProfile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
               activity_level: existingProfile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
               gender: existingProfile.gender as "male" | "female" | "other" | undefined,
-              height_unit: existingProfile.height_unit || "cm",
-              weight_unit: existingProfile.weight_unit || "kg",
+              height_unit,
+              weight_unit,
             });
             setLoading(false);
             return;
@@ -122,6 +127,10 @@ const Profile = () => {
           const profile = await loadUserProfile(userId);
           
           if (profile) {
+            // Use type assertion to ensure height_unit and weight_unit are valid
+            const height_unit = (profile.height_unit || "cm") as HeightUnit;
+            const weight_unit = (profile.weight_unit || "kg") as WeightUnit;
+            
             form.reset({
               username: profile.username || "",
               height: profile.height?.toString() || "",
@@ -130,8 +139,8 @@ const Profile = () => {
               fitness_level: profile.fitness_level as "beginner" | "intermediate" | "advanced" | undefined,
               activity_level: profile.activity_level as "sedentary" | "light" | "moderate" | "very_active" | "extra_active" | undefined,
               gender: profile.gender as "male" | "female" | "other" | undefined,
-              height_unit: profile.height_unit || "cm",
-              weight_unit: profile.weight_unit || "kg",
+              height_unit,
+              weight_unit,
             });
           }
         }
