@@ -116,15 +116,23 @@ serve(async (req) => {
       console.log("Development mode: Using preview user");
     }
 
-    const {
-      muscles, style, duration, goal,    // wizard
-      age, gender, height, height_unit,
-      weight, weight_unit, activity_level
-    } = payload;
-
+    const { muscles, style, duration, goal } = payload;
+    
     console.log("Received workout request:", payload);
 
-    // ── 2. fetch recent RPE for auto-progression ───────
+    // ── 2. fetch profile data ────────────────────────────
+    const { data: prof, error: profError } = await supabase
+      .from("profile")
+      .select("age, gender, height, height_unit, weight, weight_unit, activity_level")
+      .eq("user_id", userId)
+      .single();
+    
+    if (profError) {
+      console.error("Error fetching profile:", profError);
+      return jsonError(`Failed to fetch user profile: ${profError.message}`, 500);
+    }
+
+    // ── 3. fetch recent RPE for auto-progression ───────
     const { data: history } = await supabase
       .from("exercise_log")
       .select("exercise_name, avg_rpe:avg(rpe)")
@@ -132,25 +140,22 @@ serve(async (req) => {
       .order("avg_rpe",{ ascending:false })
       .limit(30);
 
-    // ── 3. call OpenAI with function-calling ────────────
+    // ── 4. call OpenAI with function-calling ────────────
     const chat = await openai.chat.completions.create({
       model:"gpt-4o-mini",
-      temperature:0.7,
+      temperature:0.6,
+      functions:[schema], 
+      function_call:{name:"build_workout_plan"},
       messages:[
-        { role:"system",
-          content:"You are a certified strength-and-conditioning coach. "
-                + "Use ACSM guidelines and progressive overload." },
+        { role:"system", 
+          content:"You are a professor of sport science..." },
         { role:"user",
-          content:
-            `Profile → age ${age}, gender ${gender}, height ${height}${height_unit}, `
-          + `weight ${weight}${weight_unit}, activity ${activity_level}\n`
-          + `Request → muscles ${muscles.join(",")}, style ${style}, `
-          + `goal ${goal}, duration ${duration}min\n`
-          + `Recent_RPE: ${JSON.stringify(history ?? [])}`
+          content:`Profile → ${JSON.stringify(prof)}\n`
+                + `Request → muscles ${muscles.join(",")}, style ${style}, `
+                + `goal ${goal}, duration ${duration}min\n`
+                + `Recent_RPE: ${JSON.stringify(history ?? [])}`
         }
-      ],
-      functions:[schema],
-      function_call:{ name:"build_workout_plan" }
+      ]
     });
 
     if (!chat.choices[0].message.function_call) {
@@ -161,7 +166,7 @@ serve(async (req) => {
       chat.choices[0].message.function_call.arguments
     );
 
-    // ── 4. store workout_session ────────────────────────
+    // ── 5. store workout_session ────────────────────────
     const { data: inserted, error: insErr } = await supabase
       .from("workout_session")
       .insert({
