@@ -1,15 +1,18 @@
+
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Dumbbell } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { GenerateWorkoutPlanResponse } from "@/types/edge-functions";
 import { useDevUser } from "@/hooks/useDevUser";
-
-type WorkoutStep = "muscles" | "style" | "duration" | "goal";
+import WorkoutMuscleSelector from "@/components/workout/WorkoutMuscleSelector";
+import WorkoutStyleSelector from "@/components/workout/WorkoutStyleSelector";
+import WorkoutDurationSelector from "@/components/workout/WorkoutDurationSelector";
+import WorkoutGoalSelector from "@/components/workout/WorkoutGoalSelector";
+import WorkoutSteps, { WorkoutStep } from "@/components/workout/WorkoutSteps";
+import WorkoutProgressBar from "@/components/workout/WorkoutProgressBar";
+import { useWorkoutGenerator } from "@/hooks/useWorkoutGenerator";
 
 type WorkoutData = {
   muscles: string[];
@@ -29,10 +32,10 @@ const StartWorkout = () => {
     duration: 30,
     goal: "strength",
   });
-  const [isGenerating, setIsGenerating] = useState(false);
 
   // Use either authenticated user or dev user
   const userId = session?.user.id || (devUser?.id || null);
+  const { generateWorkout, isGenerating } = useWorkoutGenerator(userId);
   
   if (!userId) {
     navigate("/auth");
@@ -41,77 +44,6 @@ const StartWorkout = () => {
 
   const updateData = <K extends keyof WorkoutData>(key: K, value: WorkoutData[K]) => {
     setWorkoutData((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleGenerateWorkout = async () => {
-    try {
-      setIsGenerating(true);
-      toast({
-        title: "Generating workout plan",
-        description: "Please wait while we create your personalized workout plan.",
-      });
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        throw new Error(`Failed to get user profile: ${profileError.message}`);
-      }
-
-      if (!profile) {
-        throw new Error("Profile not found. Please complete your profile first.");
-      }
-
-      console.log("Sending workout request with data:", { userId, ...workoutData, ...profile });
-
-      const { data: payload, error } = await supabase.functions.invoke<GenerateWorkoutPlanResponse>(
-        'generateWorkoutPlan',
-        {
-          method: "POST",
-          body: {
-            userId,
-            ...workoutData,
-            age: profile.age,
-            gender: profile.gender,
-            height: profile.height,
-            height_unit: profile.height_unit || "cm",
-            weight: profile.weight,
-            weight_unit: profile.weight_unit || "kg",
-            activity_level: profile.activity_level
-          },
-        }
-      );
-
-      if (error) {
-        console.error("Error response:", error);
-        throw new Error(`Failed to generate workout plan: ${error.message}`);
-      }
-
-      console.log("Workout generated:", payload);
-
-      if (!payload?.sessionId) {
-        throw new Error("No session ID returned from API");
-      }
-
-      toast({
-        title: "Workout generated!",
-        description: "Your personalized workout plan is ready.",
-      });
-
-      navigate(`/workout/${payload.sessionId}`);
-    } catch (error) {
-      console.error("Error generating workout:", error);
-      toast({
-        title: "Error",
-        description: `Failed to generate workout plan: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
   };
 
   // Memoize the muscle groups to improve performance
@@ -139,83 +71,47 @@ const StartWorkout = () => {
     "Muscle Endurance", "Hypertrophy", "Strength", "Fat Loss"
   ], []);
 
-  const renderStep = () => {
+  const handleMuscleToggle = (muscleName: string) => {
+    if (workoutData.muscles.includes(muscleName)) {
+      updateData("muscles", workoutData.muscles.filter(m => m !== muscleName));
+    } else {
+      updateData("muscles", [...workoutData.muscles, muscleName]);
+    }
+  };
+
+  const renderStepContent = () => {
     switch (step) {
       case "muscles":
         return (
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {muscleGroups.map((muscle) => (
-                <div key={muscle.name}>
-                  <Button
-                    variant={workoutData.muscles.includes(muscle.name) ? "default" : "outline"}
-                    className={`w-full h-24 flex flex-col items-center justify-center gap-2 ${workoutData.muscles.includes(muscle.name) ? "bg-blue-600 text-white" : ""}`}
-                    onClick={() => {
-                      if (workoutData.muscles.includes(muscle.name)) {
-                        updateData("muscles", workoutData.muscles.filter(m => m !== muscle.name));
-                      } else {
-                        updateData("muscles", [...workoutData.muscles, muscle.name]);
-                      }
-                    }}
-                  >
-                    <span className="text-2xl">{muscle.icon}</span>
-                    <span>{muscle.name}</span>
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+          <WorkoutMuscleSelector
+            selectedMuscles={workoutData.muscles}
+            onMuscleToggle={handleMuscleToggle}
+            muscleGroups={muscleGroups}
+          />
         );
       case "style":
         return (
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {workoutStyles.map((style) => (
-                <Button
-                  key={style}
-                  variant={workoutData.style === style.toLowerCase() ? "default" : "outline"}
-                  className="py-6"
-                  onClick={() => updateData("style", style.toLowerCase())}
-                >
-                  {style}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
+          <WorkoutStyleSelector
+            selectedStyle={workoutData.style}
+            onStyleSelect={(style) => updateData("style", style)}
+            workoutStyles={workoutStyles}
+          />
         );
       case "duration":
         return (
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {durations.map((mins) => (
-                <Button
-                  key={mins}
-                  variant={workoutData.duration === mins ? "default" : "outline"}
-                  className="py-6"
-                  onClick={() => updateData("duration", mins)}
-                >
-                  {mins} min
-                </Button>
-              ))}
-            </div>
-          </CardContent>
+          <WorkoutDurationSelector
+            selectedDuration={workoutData.duration}
+            onDurationSelect={(duration) => updateData("duration", duration)}
+            durations={durations}
+          />
         );
       case "goal":
         return (
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {goals.map((goal) => (
-                <Button
-                  key={goal}
-                  variant={workoutData.goal === goal.toLowerCase() ? "default" : "outline"}
-                  className="py-6"
-                  onClick={() => updateData("goal", goal.toLowerCase())}
-                >
-                  {goal}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
+          <WorkoutGoalSelector
+            selectedGoal={workoutData.goal}
+            onGoalSelect={(goal) => updateData("goal", goal)}
+            goals={goals}
+          />
         );
     }
   };
@@ -232,7 +128,7 @@ const StartWorkout = () => {
         setStep("goal");
         break;
       case "goal":
-        handleGenerateWorkout();
+        generateWorkout(workoutData);
         break;
     }
   };
@@ -251,22 +147,6 @@ const StartWorkout = () => {
     }
   };
 
-  const getStepNumber = () => {
-    switch (step) {
-      case "muscles": return 1;
-      case "style": return 2;
-      case "duration": return 3;
-      case "goal": return 4;
-    }
-  };
-
-  const stepTitles = {
-    muscles: "Select Target Muscle Groups",
-    style: "Choose Workout Style",
-    duration: "Set Workout Duration",
-    goal: "Define Your Goal"
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -275,30 +155,11 @@ const StartWorkout = () => {
             <div className="flex items-center justify-center mb-4">
               <Dumbbell className="h-6 w-6 text-blue-600" />
             </div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-gray-500">Step {getStepNumber()} of 4</div>
-              <div className="flex gap-1">
-                {["muscles", "style", "duration", "goal"].map((s, i) => (
-                  <div 
-                    key={s}
-                    className={`h-1 w-6 rounded-full ${
-                      getStepNumber() > i + 1 ? "bg-blue-600" : 
-                      getStepNumber() === i + 1 ? "bg-blue-400" : "bg-gray-200"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-            <CardTitle>{stepTitles[step]}</CardTitle>
-            <CardDescription>
-              {step === "muscles" && "Select the muscle groups you want to focus on"}
-              {step === "style" && "What type of workout do you prefer?"}
-              {step === "duration" && "How much time do you have available?"}
-              {step === "goal" && "What's your main goal for this session?"}
-            </CardDescription>
+            <WorkoutProgressBar currentStep={step} />
+            <WorkoutSteps step={step}>
+              {renderStepContent()}
+            </WorkoutSteps>
           </CardHeader>
-          
-          {renderStep()}
           
           <CardFooter className="flex justify-between">
             <Button
