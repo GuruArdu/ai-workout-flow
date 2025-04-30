@@ -3,20 +3,16 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-
-type PlanPeriod = "week" | "month";
+import { useDevUser } from "@/hooks/useDevUser";
 
 export const usePlanGenerator = (userId: string | null) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
+  const devUser = useDevUser();
+  const effectiveUserId = userId ?? devUser?.id ?? null;
 
-  const generatePlan = async (period: PlanPeriod) => {
-    if (!userId) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to generate a workout plan.",
-        variant: "destructive",
-      });
+  const generatePlan = async (period: "week" | "month") => {
+    if (!effectiveUserId) {
       navigate("/auth");
       return;
     }
@@ -24,39 +20,38 @@ export const usePlanGenerator = (userId: string | null) => {
     try {
       setIsGenerating(true);
       toast({
-        title: `Generating ${period} workout plan`,
-        description: "Please wait while we create your personalized training plan.",
+        title: "Generating training plan",
+        description: `Creating your ${period} plan, please wait...`,
       });
 
-      const { data, error } = await supabase.functions.invoke('planPeriod', {
-        method: 'POST',
-        body: {
-          userId,
-          period
+      const { data, error } = await supabase.functions.invoke<{
+        planId: string;
+      }>("planPeriod", {
+        method: "POST",
+        body: { 
+          userId: effectiveUserId, 
+          period 
         }
       });
 
       if (error) {
-        console.error("Error generating plan:", error);
-        throw new Error(`Failed to generate workout plan: ${error.message}`);
+        throw new Error(`Failed to generate ${period} plan: ${error.message}`);
       }
 
-      console.log("Plan generated:", data);
-
       toast({
-        title: "Workout plan created!",
-        description: `Successfully created a ${period} workout plan with ${data.workouts?.length || 0} sessions.`,
+        title: "Plan generated!",
+        description: `Your ${period} plan is ready.`,
       });
 
-      // Navigate to tracker to view the plan
-      navigate("/tracker");
-      
-      return data;
+      if (data?.planId) {
+        navigate(`/plan/${data.planId}`);
+      }
+
     } catch (error: any) {
       console.error("Error generating plan:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate workout plan",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
